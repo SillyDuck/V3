@@ -79,11 +79,11 @@ bool
 V3CmdExec::checkCmd(const string& check) const {
    unsigned len = this->getCmdLen();
    bool result = false;
-   size_t space = 0, nxt_space; 
+   size_t space = 0, nxt_space;
 
    for (unsigned word = 1; word <= len; ++word)
    {
-      nxt_space = check.find(' ', space + 1); 
+      nxt_space = check.find(' ', space + 1);
       if (nxt_space == string::npos) nxt_space = check.size();
 
       for (unsigned i = space + 1; i <= nxt_space; ++i)
@@ -328,7 +328,7 @@ V3CmdMgr::parseCmd(string& option) {
       }
       for (idx = 0; idx < str.size(); ++idx) { if (str[idx] == ' ') break; }
       _cmd = str.substr(0, idx);
-      if ((_cmd == "ls") || (_cmd == "vi") || (_cmd == "vim") || (_cmd == "echo") || (_cmd == "cat")) 
+      if ((_cmd == "ls") || (_cmd == "vi") || (_cmd == "vim") || (_cmd == "echo") || (_cmd == "cat"))
          system(str.c_str());
       else Msg(MSG_ERR) << "Illegal command!! (" << str << ")" << endl;
    }
