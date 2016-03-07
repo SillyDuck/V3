@@ -372,11 +372,13 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
    V3GateType type;
 
    while (!netIdList.empty()) {
+      //cout << "TOP " << id.id << " ";
       netId = netIdList.top(); id = netId.first; depth = netId.second;
       assert (validNetId(id)); assert (!existVerifyData(id, depth));
       type = _ntk->getGateType(id); assert (type < V3_XD);
       if (V3_PIO >= type) add_PI_Formula(id, depth);
       else if (V3_FF == type) {
+         //cout << "FF" << " ";
          if (depth) {
             netId.first = _ntk->getInputNetId(id, 0); --netId.second;
             if (!existVerifyData(netId.first, netId.second)) { netIdList.push(netId); continue; }
@@ -389,6 +391,7 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
       }
       else if (AIG_FALSE >= type) {
          if (AIG_NODE == type) {
+            //cout << "AIG_NODE " << id.id << " ";
             netId.first = _ntk->getInputNetId(id, 0); if (!existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
             netId.first = _ntk->getInputNetId(id, 1); if (!existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
             add_AND_Formula(id, depth);
@@ -436,7 +439,7 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
          add_SLICE_Formula(id, depth);
       }
       else { assert (BV_CONST == type); add_CONST_Formula(id, depth); }
-
+      //cout << endl;
       netIdList.pop();
    }
 }

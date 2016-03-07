@@ -14,6 +14,7 @@
 // General Simulation Functions
 const bool performInputFileSimulation(const V3NtkHandler* const, const string&, const bool&, const string&);
 const bool performRandomSimulation(const V3NtkHandler* const, const uint32_t&, const bool&, const string&);
+const bool performTemporalSim(const V3NtkHandler* const, bool);
 
 #endif
 

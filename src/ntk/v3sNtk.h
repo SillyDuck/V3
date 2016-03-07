@@ -1,7 +1,10 @@
 /****************************************************************************
   FileName     [ v3sNtk.h ]
   PackageName  [ v3/src/ntk ]
-  Synopsis     [ rewrited version of V3 Network. ]
+  Synopsis     [ rewrited version of V3 Network.
+                 try to remove some rare-used function and merge
+                 v3SvrMinisat v3AlgSim and v3NtkStrash v3WhateverType to here
+               ]
   Author       [ SillyDuck ]
   Copyright    [ Copyright(c) 2015-2016 DVLab, GIEE, NTU, Taiwan ]
 ****************************************************************************/
@@ -10,10 +13,12 @@
 #define V3S_NTK_H
 
 #include "Solver.h"
-#include "V3SNTk.h"
+#include "v3Ntk.h"
 #include "v3Misc.h"
 #include "v3Type.h"
+#include "v3SvrType.h"
 #include "v3BitVec.h"
+#include "v3NtkStrash.h"
 
 // Type defined -- for a glimpse
 /*
@@ -58,11 +63,13 @@ class V3SNtk
 {
    public : 
 
-      V3SNTk();
-      virtual ~V3SNTk();
-
-      inline const V3GateType getGateType(const V3NetId&) const;
-      inline const uint32_t getNetSize() const { return _inputData.size(); }
+      V3SNtk();
+      virtual ~V3SNtk();
+      void cloneFromV3Ntk( V3Ntk* );
+      void createGate(const V3GateType& type, const V3NetId& id) ;
+      inline const V3GateType getGateType(const V3NetId& id) const { return (V3GateType)_typeMisc[id.id].type; }
+      inline const uint32_t getNetSize() const { return _fanin0Data.size(); }
+      //make sure add NULL fanin1 for FF and PO
       inline const uint32_t getInputSize() const { return _IOList[0].size(); }
       inline const uint32_t getOutputSize() const { return _IOList[1].size(); }
       inline const uint32_t getInoutSize() const { return _IOList[2].size(); }
@@ -71,13 +78,14 @@ class V3SNtk
       inline const V3NetId& getOutput(const uint32_t& i) const { assert (i < getOutputSize()); return _IOList[1][i]; }
       inline const V3NetId& getInout(const uint32_t& i) const { assert (i < getInoutSize()); return _IOList[2][i]; }
       inline const V3NetId& getLatch(const uint32_t& i) const { assert (i < getLatchSize()); return _FFList[i]; }
-      inline const V3NetId& getConst(const uint32_t& i) const { assert (i < getConstSize()); return _AIGFalse; }
+      inline const V3NetId& getConst(const uint32_t& i) const { return _AIGFalse; }
       // Ntk Traversal Functions
-      inline const V3NetId& getFanin(const V3NetId&, const uint32_t&) const;
+      inline const V3NetId& getFanin(const V3NetId& id, const uint32_t& i) const {
+         assert ( !i || i == 1); return i ?  _fanin1Data[id.id].id : _fanin0Data[id.id].id; }
       // Ntk Misc Data Functions
       inline void newMiscData() { assert (_globalMisc < V3MiscType(0, V3SNTkUD).misc); ++_globalMisc; }
-      inline const bool isLatestMiscData(const V3NetId&) const;
-      inline void setLatestMiscData(const V3NetId&);
+      inline const bool isLatestMiscData(const V3NetId& id) const{ return _globalMisc == _typeMisc[id.id].misc; }
+      inline void setLatestMiscData(const V3NetId& id) { _typeMisc[id.id].misc = _globalMisc; }
 
       // Ntk Cut Signal Functions
       //inline void setCutSignals(const V3NetVec& cut) { _cutSignals = cut; }
@@ -85,48 +93,41 @@ class V3SNtk
       //inline const uint32_t getCutSize() const { return _cutSignals.size(); }
       //inline const V3NetId& getCutSignal(const uint32_t& i) const { return _cutSignals[i]; }
 
+      /*void computeFanout(){ // implement this when needed
+         _fanoutData.clear();
+      };*/
+
+
+      void strash(){
+         _fanin0Data.clear();
+         _fanin1Data.clear();
+      };
+      void fraig(){
+         _fanin0Data.clear();
+         _fanin1Data.clear();
+      };
+
    protected :
 
       V3NetVec       _IOList[3];    // V3NetId of PI / PO / PIO
       V3NetVec       _FFList;       // V3NetId of FF
 
       V3NetId        _AIGFalse;
-      V3TypeVec      _typeMisc;     // GateType with Misc Data
-      V3InputTable   _inputData;    // Fanin Table for V3NetId   (V3NetId, V3BVXId, V3BusId)
+      V3TypeVec      _typeMisc;      // GateType with Misc Data
+      V3InputVec       _fanin0Data;    // Fanin Vec for V3NetId
+      V3InputVec       _fanin1Data;    // Fanin vec for V3NetId
+      //V3NetTable     _fanoutData;
       uint32_t       _globalMisc;   // Global Misc Data for V3NetId in Ntk
 
-      MSolver*       _Solver;    // Pointer to a Minisat solver
+      // should write in v3sPDR lol
+      /*MSolver*       _Solver;    // Pointer to a Minisat solver
       Var            _curVar;    // Latest Fresh Variable
       vec<Lit>       _assump;    // Assumption List for assumption solve
-      V3SvrMLitData  _init;      // Initial state Var storage
-      V3SvrMVarTable _ntkData;   // Mapping between V3NetId and Solver Data
-      // V3 Special Handling Members
-      //V3NetId        _globalClk;    // Global Clock Signal (Specified in RTL)
-      //V3SNTkModuleVec _ntkModule;    // Module Instance for Hierarchical Ntk
+      V3Vec<Lit>::Vec  _init;      // Initial state Var storage
+      V3SvrMVarTable _ntkData;   // Mapping between V3NetId and Solver Data*/
+
 };
 
-// V3AigNtk : V3 AIG Network
-
-// Inline Function Implementation of Ntk Destructive Functions
-inline void V3SNTk::freeNetId(const V3NetId& id) {
-   assert (validNetId(id)); _inputData[id.id].clear(); _typeMisc[id.id].type = V3_PI; }
-// Inline Function Implementations of Ntk Structure Functions
-inline const V3GateType V3SNTk::getGateType(const V3NetId& id) const {
-   assert (validNetId(id)); return (V3GateType)_typeMisc[id.id].type; }
-inline V3SNTkModule* const V3SNTk::getModule(const uint32_t& i) const {
-   assert (i < getModuleSize()); return _ntkModule[i]; }
-inline V3SNTkModule* const V3SNTk::getModule(const V3NetId& id) const {
-   assert (V3_MODULE == getGateType(id)); return getModule(_inputData[id.id][0].value); }
-// Inline Function Implementations of Ntk Traversal Functions
-inline const uint32_t V3SNTk::getInputNetSize(const V3NetId& id) const {
-   assert (validNetId(id)); return _inputData[id.id].size(); }
-inline const V3NetId& V3SNTk::getInputNetId(const V3NetId& id, const uint32_t& i) const {
-   assert (i < getInputNetSize(id)); return _inputData[id.id][i].id; }
-// Inline Function Implementations of Ntk Misc Data Functions
-inline const bool V3SNTk::isLatestMiscData(const V3NetId& id) const {
-   assert (validNetId(id)); return _globalMisc == _typeMisc[id.id].misc; }
-inline void V3SNTk::setLatestMiscData(const V3NetId& id) {
-   assert (validNetId(id)); _typeMisc[id.id].misc = _globalMisc; assert (isLatestMiscData(id)); }
 
 #endif
 

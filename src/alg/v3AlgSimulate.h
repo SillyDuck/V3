@@ -41,6 +41,8 @@ class V3AlgSimulate
       virtual void getSimRecordData(uint32_t, V3SimTrace&) const;
       // Simulation Output Functions
       virtual void printResult() const;
+      virtual void printHowManyX(int&, int&);
+      virtual void getStateBV(V3BitVecX & data, bool);
    protected : 
       // Simulation Private Helper Function
       void resetSimulator();
@@ -84,6 +86,8 @@ class V3AlgAigSimulate : public V3AlgSimulate
       void getSimRecordData(uint32_t, V3SimTrace&) const;
       // Simulation Output Functions
       void printResult() const;
+      void printHowManyX(int&, int&);
+      void getStateBV(V3BitVecX & data, bool);
    protected : 
       // Private Event-Driven Simulation Functions
       void simulateEventList();
@@ -98,7 +102,7 @@ class V3AlgAigSimulate : public V3AlgSimulate
 // class V3AlgBvSimulate : Base Class for V3 BV Ntk Simulation
 class V3AlgBvSimulate : public V3AlgSimulate
 {
-   public : 
+   public :
       // Constructor and Destructor
       V3AlgBvSimulate(const V3NtkHandler* const);
       virtual ~V3AlgBvSimulate();
@@ -121,7 +125,7 @@ class V3AlgBvSimulate : public V3AlgSimulate
       void getSimRecordData(uint32_t, V3SimTrace&) const;
       // Simulation Output Functions
       void printResult() const;
-   protected : 
+   protected :
       // Private Event-Driven Simulation Functions
       void simulateEventList();
       // Private Simulation Helper Functions

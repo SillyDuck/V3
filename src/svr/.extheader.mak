@@ -1,4 +1,4 @@
-svr.d: ../../include/v3SvrBase.h ../../include/v3SvrBoolector.h ../../include/v3SvrHandler.h ../../include/v3SvrMiniSat.h ../../include/v3SvrSatHelper.h ../../include/v3SvrType.h 
+svr.d: ../../include/v3SvrBase.h ../../include/v3SvrBoolector.h ../../include/v3SvrHandler.h ../../include/v3SvrMiniSat.h ../../include/v3SvrSatHelper.h ../../include/v3SvrType.h ../../include/v3sSvrMiniSat.h 
 ../../include/v3SvrBase.h: v3SvrBase.h
 	@rm -f ../../include/v3SvrBase.h
 	@ln -fs ../src/svr/v3SvrBase.h ../../include/v3SvrBase.h
@@ -17,3 +17,6 @@ svr.d: ../../include/v3SvrBase.h ../../include/v3SvrBoolector.h ../../include/v3
 ../../include/v3SvrType.h: v3SvrType.h
 	@rm -f ../../include/v3SvrType.h
 	@ln -fs ../src/svr/v3SvrType.h ../../include/v3SvrType.h
+../../include/v3sSvrMiniSat.h: v3sSvrMiniSat.h
+	@rm -f ../../include/v3sSvrMiniSat.h
+	@ln -fs ../src/svr/v3sSvrMiniSat.h ../../include/v3sSvrMiniSat.h

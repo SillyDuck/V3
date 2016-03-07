@@ -86,7 +86,8 @@ class V3NtkModule
 
 // V3Ntk : V3 Base Network
 class V3Ntk
-{
+{  
+   friend class V3SNtk;
    public : 
       // Constructors for V3 Network
       V3Ntk();

@@ -95,6 +95,7 @@ V3HelpCmd::help() const {
 //----------------------------------------------------------------------
 V3CmdExecStatus
 V3QuitCmd::exec(const string& option) {
+   return CMD_EXEC_QUIT;
    vector<string> options;
    V3CmdExec::lexOptions(option, options);
 

@@ -21,6 +21,7 @@
 bool initAlgCmd() {
    return (
          v3CmdMgr->regCmd("SIM NTk",      3, 2, new V3SimNtkCmd   )  &&
+         v3CmdMgr->regCmd("TEMporal SIM", 3, 3, new V3TemSimCmd   )  &&
          v3CmdMgr->regCmd("PLOt TRace",   3, 2, new V3PlotTraceCmd)
    );
 }
@@ -125,6 +126,46 @@ void
 V3SimNtkCmd::help() const {
    Msg(MSG_IFO) << setw(20) << left << "SIM NTk: " << "Simulate on Current Network." << endl;
 }
+
+//----------------------------------------------------------------------
+// TEM SIM
+//----------------------------------------------------------------------
+
+V3CmdExecStatus
+V3TemSimCmd::exec(const string& option) {
+   vector<string> options;
+   V3CmdExec::lexOptions(option, options);
+   bool verbose = false;
+   size_t n = options.size();
+   for (size_t i = 0; i < n; ++i) {
+      const string& token = options[i];
+      if (v3StrNCmp("-Verbose", token, 2) == 0) {
+         verbose = true;
+      }
+   }
+   V3NtkHandler* const handler = v3Handler.getCurHandler();
+   if (handler) {
+      assert (handler->getNtk());
+      if (!handler->getNtk()->getModuleSize()) {
+         performTemporalSim(handler,verbose);
+      }
+      else Msg(MSG_ERR) << "Simulation can only be performed on Flattened Ntk !!" << endl;
+   }
+   else Msg(MSG_ERR) << "Empty Ntk !!" << endl;
+   return CMD_EXEC_DONE;
+}
+
+void
+V3TemSimCmd::usage(const bool& verbose) const {
+   Msg(MSG_IFO) << "Usage: TEM SIM " << endl;
+}
+
+void
+V3TemSimCmd::help() const {
+   Msg(MSG_IFO) << setw(20) << left << "Temporal Simulation: " << "temporal Simulate on Current Network." << endl;
+}
+
+
 
 //----------------------------------------------------------------------
 // PLOt TRace <(string inputPatternFileName)> <(string outputFileName)>

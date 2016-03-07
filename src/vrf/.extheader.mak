@@ -1,4 +1,4 @@
-vrf.d: ../../include/v3VrfBase.h ../../include/v3VrfCmd.h ../../include/v3VrfIPDR.h ../../include/v3VrfMPDR.h ../../include/v3VrfKLive.h ../../include/v3VrfSIM.h ../../include/v3VrfCITP.h ../../include/v3VrfFITP.h ../../include/v3VrfResult.h ../../include/v3VrfSEC.h ../../include/v3VrfUMC.h ../../include/v3VrfBMC.h ../../include/v3VrfShared.h 
+vrf.d: ../../include/v3VrfBase.h ../../include/v3VrfCmd.h ../../include/v3VrfIPDR.h ../../include/v3sVrfIPDR.h ../../include/v3VrfMPDR.h ../../include/v3VrfKLive.h ../../include/v3VrfSIM.h ../../include/v3VrfCITP.h ../../include/v3VrfFITP.h ../../include/v3VrfResult.h ../../include/v3VrfSEC.h ../../include/v3VrfUMC.h ../../include/v3VrfBMC.h ../../include/v3VrfShared.h 
 ../../include/v3VrfBase.h: v3VrfBase.h
 	@rm -f ../../include/v3VrfBase.h
 	@ln -fs ../src/vrf/v3VrfBase.h ../../include/v3VrfBase.h
@@ -8,6 +8,9 @@ vrf.d: ../../include/v3VrfBase.h ../../include/v3VrfCmd.h ../../include/v3VrfIPD
 ../../include/v3VrfIPDR.h: v3VrfIPDR.h
 	@rm -f ../../include/v3VrfIPDR.h
 	@ln -fs ../src/vrf/v3VrfIPDR.h ../../include/v3VrfIPDR.h
+../../include/v3sVrfIPDR.h: v3sVrfIPDR.h
+	@rm -f ../../include/v3sVrfIPDR.h
+	@ln -fs ../src/vrf/v3sVrfIPDR.h ../../include/v3sVrfIPDR.h
 ../../include/v3VrfMPDR.h: v3VrfMPDR.h
 	@rm -f ../../include/v3VrfMPDR.h
 	@ln -fs ../src/vrf/v3VrfMPDR.h ../../include/v3VrfMPDR.h

@@ -12,7 +12,7 @@
 #include "v3SvrHandler.h"
 
 // Solver Creation Functions
-V3SvrBase* const allocSolver(const V3SolverType& type, const V3Ntk* const ntk, const bool& freeBound) {
+V3SvrBase* const allocSolver(const V3SolverType& type, const V3Ntk* const ntk, const bool& freeBound ) {
    assert (type < V3_SVR_TOTAL); assert (ntk);
    switch (type) {
       case V3_SVR_MINISAT     : return new V3SvrMiniSat(ntk, freeBound);

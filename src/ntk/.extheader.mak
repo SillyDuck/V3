@@ -1,4 +1,4 @@
-ntk.d: ../../include/v3NtkCmd.h ../../include/v3NtkHandler.h ../../include/v3NtkInput.h ../../include/v3NtkSimplify.h ../../include/v3NtkUtil.h ../../include/v3Ntk.h ../../include/v3NtkHash.h ../../include/v3NtkRewrite.h ../../include/v3NtkStrash.h ../../include/v3Type.h 
+ntk.d: ../../include/v3NtkCmd.h ../../include/v3NtkHandler.h ../../include/v3NtkInput.h ../../include/v3NtkSimplify.h ../../include/v3NtkUtil.h ../../include/v3Ntk.h ../../include/v3sNtk.h ../../include/v3NtkHash.h ../../include/v3NtkRewrite.h ../../include/v3NtkStrash.h ../../include/v3Type.h 
 ../../include/v3NtkCmd.h: v3NtkCmd.h
 	@rm -f ../../include/v3NtkCmd.h
 	@ln -fs ../src/ntk/v3NtkCmd.h ../../include/v3NtkCmd.h
@@ -17,6 +17,9 @@ ntk.d: ../../include/v3NtkCmd.h ../../include/v3NtkHandler.h ../../include/v3Ntk
 ../../include/v3Ntk.h: v3Ntk.h
 	@rm -f ../../include/v3Ntk.h
 	@ln -fs ../src/ntk/v3Ntk.h ../../include/v3Ntk.h
+../../include/v3sNtk.h: v3sNtk.h
+	@rm -f ../../include/v3sNtk.h
+	@ln -fs ../src/ntk/v3sNtk.h ../../include/v3sNtk.h
 ../../include/v3NtkHash.h: v3NtkHash.h
 	@rm -f ../../include/v3NtkHash.h
 	@ln -fs ../src/ntk/v3NtkHash.h ../../include/v3NtkHash.h

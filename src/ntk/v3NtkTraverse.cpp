@@ -258,14 +258,14 @@ const uint32_t dfsNtkForGeneralOrder(V3Ntk* const ntk, V3NetVec& orderMap, const
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) orderMap.push_back(ntk->getLatch(i));
    for (uint32_t i = 0; i < orderMap.size(); ++i) m[orderMap[i].id] = true;
    // Pseudo Primary Input Initial State Logics
-   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) // usually 0 initial state here
       dfsGeneralOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 1), m, orderMap);
    // Record End of Initial Logic if Needed  (e.g. simulator)
    const uint32_t initEndIndex = orderMap.size();
    // (Pseudo) Primary Output Fanin Logics
-   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) 
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
       dfsGeneralOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 0), m, orderMap);
-   for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) 
+   for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) // usually 0 inout here
       dfsGeneralOrder(ntk, ntk->getInputNetId(ntk->getInout(i), 0), m, orderMap);
    if (targetNets.size())
       for (uint32_t i = 0; i < targetNets.size(); ++i) dfsGeneralOrder(ntk, targetNets[i], m, orderMap);

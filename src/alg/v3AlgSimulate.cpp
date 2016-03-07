@@ -31,6 +31,12 @@ void
 V3AlgSimulate::simulate() {}
 
 void
+V3AlgSimulate::printHowManyX(int& x, int& nx){}
+
+void
+V3AlgSimulate::getStateBV(V3BitVecX & data, bool verbose){}
+
+void
 V3AlgSimulate::reset(const V3NetVec& targetNets) { resetSimulator(); }
 
 // Simulation Data Functions
@@ -122,6 +128,59 @@ V3AlgAigSimulate::simulate() {
    }
 }
 
+void
+V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
+
+   const V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
+   V3BitVecS xxx;
+   V3BitVecS one;
+   one.setOnes(-1);
+   V3BitVecS z;
+   z.setZeros(-1);
+   int x=0, nx = 0;
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) {
+      if(verbose){
+         if( _dffValue[i] == xxx ) cout << "X";
+         else if( _dffValue[i] == one ) cout << "1";
+         else if( _dffValue[i] == z ) cout << "0";
+         else cout << "?";
+      }
+      if( _dffValue[i] == xxx ) x++;
+      else if( _dffValue[i] == one ) nx++;
+      else if( _dffValue[i] == z ) nx++;
+      else cout << "?";
+
+      if( _dffValue[i] == xxx ) data.setX(i);
+      else if( _dffValue[i] == one ) data.set1(i);
+      else if( _dffValue[i] == z ) data.set0(i);
+      else cout << "?";
+   }
+   if(!verbose) cout << x <<"/" << nx;
+   cout <<endl;
+}
+
+
+void
+V3AlgAigSimulate::printHowManyX(int& x, int& nx){
+
+   const V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
+   V3BitVecS xxx;
+   V3BitVecS one;
+   one.setOnes(-1);
+   V3BitVecS z;
+   z.setZeros(-1);
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) {
+      /*if( _dffValue[i] == x ) cout << "X";
+      else if( _dffValue[i] == one ) cout << "1";
+      else if( _dffValue[i] == z ) cout << "0";
+      else cout << "?";*/
+      if( _dffValue[i] == xxx ) x++;
+      else if( _dffValue[i] == one ) nx++;
+      else if( _dffValue[i] == z ) nx++;
+      else cout << "?";
+   }
+   //cout << endl;
+}
 void
 V3AlgAigSimulate::reset(const V3NetVec& targetNets) {
    // Initialize Simulation Order

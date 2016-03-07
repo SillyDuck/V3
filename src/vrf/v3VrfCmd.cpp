@@ -14,6 +14,7 @@
 #include "v3VrfSEC.h"
 #include "v3VrfSIM.h"
 #include "v3VrfBMC.h"
+#include "v3sVrfBMC.h"
 #include "v3VrfUMC.h"
 #include "v3ExtUtil.h"
 #include "v3NtkUtil.h"
@@ -21,6 +22,7 @@
 #include "v3VrfCITP.h"
 #include "v3VrfFITP.h"
 #include "v3VrfIPDR.h"
+#include "v3sVrfIPDR.h"
 #include "v3VrfMPDR.h"
 #include "v3VrfKLive.h"
 #include "v3DfxTrace.h"
@@ -770,7 +772,8 @@ V3BMCVrfCmd::exec(const string& option) {
    bool maxD = false, preD = false, incD = false;
    bool maxDON = false, preDON = false, incDON = false;
    uint32_t maxDepth = 0, preDepth = 0, incDepth = 0;
-   
+   bool simp = false;
+
    size_t n = options.size();
    for (size_t i = 0; i < n; ++i) {
       const string& token = options[i];
@@ -791,6 +794,10 @@ V3BMCVrfCmd::exec(const string& option) {
          else if (maxDON) return V3CmdExec::errorOption(CMD_OPT_MISSING, "(unsigned MaxDepth)");
          else if (preDON) return V3CmdExec::errorOption(CMD_OPT_MISSING, "(unsigned PreDepth)");
          else incD = incDON = true;
+      }
+      else if (v3StrNCmp("-Simplified", token, 2) == 0) {
+         cout << "Running Simplified BMC\n";
+         simp = true;
       }
       else if (maxDON || preDON || incDON) {
          int temp; if (!v3Str2Int(token, temp)) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
@@ -818,17 +825,26 @@ V3BMCVrfCmd::exec(const string& option) {
             V3NetVec constrList; pNtk->elaborateProperty(property, constrList);
             if (constrList.size()) pNtk->combineConstraintsToOutputs(0, constrList);
             // Initialize Checker
-            V3VrfBMC* const checker = new V3VrfBMC(pNtk); assert (checker);
-            // BMC Specific Settings
-            if (maxD) checker->setMaxDepth(maxDepth);
-            if (preD) checker->setPreDepth(preDepth);
-            if (incD) checker->setIncDepth(incDepth);
-            checker->verifyInOrder();
-            // Set Verification Result
-            if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
-               property->setResult(checker->getResult(0));
-            // Free Checker and Elaborated Ntk
-            delete checker; delete pNtk;
+            if(simp){
+               V3SVrfBMC* const checker = new V3SVrfBMC(pNtk); assert (checker);
+               checker->verifyInOrder();
+               if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
+                  property->setResult(checker->getResult(0));
+               delete checker; delete pNtk;
+            }
+            else {
+               V3VrfBMC* const checker = new V3VrfBMC(pNtk); assert (checker);
+               // BMC Specific Settings
+               if (maxD) checker->setMaxDepth(maxDepth);
+               if (preD) checker->setPreDepth(preDepth);
+               if (incD) checker->setIncDepth(incDepth);
+               checker->verifyInOrder();
+               // Set Verification Result
+               if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
+                  property->setResult(checker->getResult(0));
+               // Free Checker and Elaborated Ntk
+               delete checker; delete pNtk;
+            }
          }
          else Msg(MSG_ERR) << "Property Not Found !!" << endl;
       }
@@ -1017,7 +1033,7 @@ V3PDRVrfCmd::exec(const string& option) {
    vector<string> options;
    V3CmdExec::lexOptions(option, options);
 
-   bool maxD = false, maxDON = false, recycle = false, recycleON = false;
+   bool maxD = false, maxDON = false, recycle = false, recycleON = false, simp = false;
    bool incremental = false, fwdSATGen = false, fwdUNSATGen = false;
    uint32_t maxDepth = 0, recycleCount = 0;
    string propertyName = "";
@@ -1053,6 +1069,10 @@ V3PDRVrfCmd::exec(const string& option) {
          else if (recycleON) return V3CmdExec::errorOption(CMD_OPT_MISSING, "(unsigned MaxCount)");
          else fwdUNSATGen = true;
       }
+      else if (v3StrNCmp("-Simplified", token, 2) == 0) {
+         cout << "Running Simplified PDR\n";
+         simp = true;
+      }
       else if (maxDON || recycleON) {
          int temp; if (!v3Str2Int(token, temp)) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
          if (temp <= 0) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
@@ -1062,7 +1082,7 @@ V3PDRVrfCmd::exec(const string& option) {
       else if (propertyName == "") propertyName = token;
       else return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
    }
-   
+
    if (maxDON) return V3CmdExec::errorOption(CMD_OPT_MISSING, "(unsigned MaxDepth)");
    if (recycleON) return V3CmdExec::errorOption(CMD_OPT_MISSING, "(unsigned MaxCount)");
 
@@ -1077,28 +1097,38 @@ V3PDRVrfCmd::exec(const string& option) {
             V3NetVec constrList; pNtk->elaborateProperty(property, constrList);
             if (constrList.size()) pNtk->combineConstraintsToOutputs(0, constrList);
             // Initialize Checker
-            V3VrfBase* const checker = (incremental) ? (V3VrfBase*)(new V3VrfIPDR(pNtk)) 
-                                                     : (V3VrfBase*)(new V3VrfMPDR(pNtk)); assert (checker);
-            // PDR Specific Settings
-            if (maxD) checker->setMaxDepth(maxDepth);
-            if (incremental) {
-               V3VrfIPDR* const pdrChecker = dynamic_cast<V3VrfIPDR*>(checker);
-               if (recycle) pdrChecker->setRecycle(recycleCount);
-               pdrChecker->setForwardSATGen(fwdSATGen);
-               pdrChecker->setForwardUNSATGen(fwdUNSATGen);
+            if(simp){
+               V3SVrfIPDR* const checker = new V3SVrfIPDR(pNtk); assert (checker);
+               if (maxD) checker->setMaxDepth(maxDepth);
+               checker->verifyInOrder();
+               if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
+                  property->setResult(checker->getResult(0));
+               delete checker; delete pNtk;
             }
-            else {
-               V3VrfMPDR* const pdrChecker = dynamic_cast<V3VrfMPDR*>(checker);
-               if (recycle) pdrChecker->setRecycle(recycleCount);
-               pdrChecker->setForwardSATGen(fwdSATGen);
-               pdrChecker->setForwardUNSATGen(fwdUNSATGen);
+            else{
+               V3VrfBase* const checker = (incremental) ? (V3VrfBase*)(new V3VrfIPDR(pNtk)) 
+                                                        : (V3VrfBase*)(new V3VrfMPDR(pNtk)); assert (checker);
+               // PDR Specific Settings
+               if (maxD) checker->setMaxDepth(maxDepth);
+               if (incremental) {
+                  V3VrfIPDR* const pdrChecker = dynamic_cast<V3VrfIPDR*>(checker);
+                  if (recycle) pdrChecker->setRecycle(recycleCount);
+                  pdrChecker->setForwardSATGen(fwdSATGen);
+                  pdrChecker->setForwardUNSATGen(fwdUNSATGen);
+               }
+               else {
+                  V3VrfMPDR* const pdrChecker = dynamic_cast<V3VrfMPDR*>(checker);
+                  if (recycle) pdrChecker->setRecycle(recycleCount);
+                  pdrChecker->setForwardSATGen(fwdSATGen);
+                  pdrChecker->setForwardUNSATGen(fwdUNSATGen);
+               }
+               checker->verifyInOrder();
+               // Set Verification Result
+               if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
+                  property->setResult(checker->getResult(0));
+               // Free Checker and Elaborated Ntk
+               delete checker; delete pNtk;
             }
-            checker->verifyInOrder();
-            // Set Verification Result
-            if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
-               property->setResult(checker->getResult(0));
-            // Free Checker and Elaborated Ntk
-            delete checker; delete pNtk;
          }
          else Msg(MSG_ERR) << "Property Not Found !!" << endl;
       }

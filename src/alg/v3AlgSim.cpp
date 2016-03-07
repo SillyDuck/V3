@@ -15,6 +15,64 @@
 #include <fstream>
 #include <iomanip>
 
+const bool performTemporalSim(const V3NtkHandler* const handler, bool verbose){
+
+   string outFileName = "what";
+   ofstream output;
+   output.open(outFileName.c_str(),std::ofstream::out);
+
+   V3AlgSimulate* simHandler = 0;
+   if (dynamic_cast<V3BvNtk*>(handler->getNtk())) simHandler = new V3AlgBvSimulate(handler);
+   else simHandler = new V3AlgAigSimulate(handler); assert (simHandler);
+
+   const V3Ntk* const ntk = handler->getNtk(); assert (ntk);
+   uint32_t inputSize = 0;
+   for (uint32_t i = 0; i < ntk->getInputSize(); ++i) inputSize += ntk->getNetWidth(ntk->getInput(i));
+   for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) inputSize += ntk->getNetWidth(ntk->getInout(i));
+
+   V3BitVecX value; string valueStr = "";
+   vector<V3BitVecX> history;
+   unsigned ii = 0;
+   uint32_t j = 0;
+   for (; j < 30; ++j) {
+      //do { getline(input, valueStr); assert (!input.eof()); } while (!valueStr.size());
+      //assert (patternSize == valueStr.size());
+      V3BitVecX v_dff(ntk->getLatchSize());
+      simHandler->updateNextStateValue();
+      for (uint32_t i = 0; i < ntk->getInputSize(); ++i) {
+         value.resize(ntk->getNetWidth(ntk->getInput(i)));
+         for (uint32_t x = ntk->getNetWidth(ntk->getInput(i)), k = inputSize - x; k < inputSize; ++k)
+            value.setX(--x);
+         simHandler->setSource(ntk->getInput(i), value);
+      }
+      for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) {
+         value.resize(ntk->getNetWidth(ntk->getInout(i)));
+         for (uint32_t x = ntk->getNetWidth(ntk->getInout(i)), k = inputSize - x; k < inputSize; ++k)
+            value.setX(--x);
+         simHandler->setSource(ntk->getInout(i), value);
+      }
+      simHandler->simulate();
+
+      simHandler->getStateBV(v_dff,verbose);
+      for (ii = 0; ii < history.size(); ++ii){
+         if(history[ii] == v_dff) goto end;
+      }
+      history.push_back(v_dff);
+
+
+      /*int x = 0;
+      int nx = 0;
+      simHandler->printHowManyX(x,nx);
+      output << x << " " << nx << endl;*/
+   }
+
+end:
+
+   cout << ii << endl;
+   delete simHandler; return true;
+
+}
+
 // General Simulation Functions
 const bool performInputFileSimulation(const V3NtkHandler* const handler, const string& fileName, 
                                       const bool& event, const string& outFileName) {

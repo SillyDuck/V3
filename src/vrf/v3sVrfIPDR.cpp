@@ -1,50 +1,52 @@
 /****************************************************************************
-  FileName     [ v3VrfIPDR.cpp ]
+  FileName     [ v3sVrfIPDR.cpp ]
   PackageName  [ v3/src/vrf ]
-  Synopsis     [ Incremental Property Directed Reachability on V3 Ntk. ]
-  Author       [ Cheng-Yin Wu ]
-  Copyright    [ Copyright(c) 2012-2014 DVLab, GIEE, NTU, Taiwan ]
+  Synopsis     [ Simplified Property Directed Reachability on V3 Ntk. ]
+  Author       [ SillyDuck ]
+  Copyright    [ Copyright(c) 2016 DVLab, GIEE, NTU, Taiwan ]
 ****************************************************************************/
 
-#ifndef V3_VRF_IPDR_C
-#define V3_VRF_IPDR_C
+
+#ifndef V3S_VRF_IPDR_C
+#define V3S_VRF_IPDR_C
 
 #include "v3Msg.h"
 #include "v3Bucket.h"
-#include "v3VrfIPDR.h"
+#include "v3sVrfIPDR.h"
+#include "v3NtkTemDecomp.h"
 
 #include <iomanip>
 
 //#define V3_IPDR_USE_PROPAGATE_BACKWARD
-#define V3_IPDR_USE_PROPAGATE_LOW_COST
+#define V3S_IPDR_USE_PROPAGATE_LOW_COST
 
 /* -------------------------------------------------- *\
- * Class V3IPDRFrame Implementations
+ * Class V3SIPDRFrame Implementations
 \* -------------------------------------------------- */
 // Constructor and Destructor
-V3IPDRFrame::V3IPDRFrame() {
+V3SIPDRFrame::V3SIPDRFrame() {
    _cubeList.clear();
 }
 
-V3IPDRFrame::~V3IPDRFrame() {
-   for (V3IPDRCubeList::iterator it = _cubeList.begin(); it != _cubeList.end(); ++it) delete *it;
+V3SIPDRFrame::~V3SIPDRFrame() {
+   for (V3SIPDRCubeList::iterator it = _cubeList.begin(); it != _cubeList.end(); ++it) delete *it;
    _cubeList.clear();
 }
 
 // Retrieval Functions
 const bool
-V3IPDRFrame::pushCube(V3IPDRCube* const c) {
+V3SIPDRFrame::pushCube(V3SIPDRCube* const c) {
    const uint32_t cubeSize = _cubeList.size(); _cubeList.insert(c);
    return cubeSize != _cubeList.size();
 }
 
 // Cube Containment Functions
 const bool
-V3IPDRFrame::subsumes(const V3IPDRCube* const cube) const {
+V3SIPDRFrame::subsumes(const V3SIPDRCube* const cube) const {
    // This function checks whether cube is subsumed by any cube in this frame.
    assert (cube); const V3NetVec& cubeState = cube->getState();
    const uint64_t cubeSignature = ~(cube->getSignature());
-   V3IPDRCubeList::const_reverse_iterator it = _cubeList.rbegin();
+   V3SIPDRCubeList::const_reverse_iterator it = _cubeList.rbegin();
    for (; it != _cubeList.rend(); ++it) {
       const V3NetVec& state = (*it)->getState(); assert (state.size());
       // Early Return
@@ -66,12 +68,12 @@ V3IPDRFrame::subsumes(const V3IPDRCube* const cube) const {
 }
 
 void
-V3IPDRFrame::removeSubsumed(const V3IPDRCube* const cube) {
+V3SIPDRFrame::removeSubsumed(const V3SIPDRCube* const cube) {
    // This function checks whether there's any existing cube in this frame subsumed by cube.
    // If such cube is found, remove it from _cubeList
    assert (cube); const V3NetVec& cubeState = cube->getState();
    const uint64_t cubeSignature = cube->getSignature();
-   V3IPDRCubeList::iterator it = _cubeList.begin();
+   V3SIPDRCubeList::iterator it = _cubeList.begin();
    while (it != _cubeList.end()) {
       const V3NetVec& state = (*it)->getState();
       // Early Return
@@ -93,12 +95,12 @@ V3IPDRFrame::removeSubsumed(const V3IPDRCube* const cube) {
 }
 
 void
-V3IPDRFrame::removeSubsumed(const V3IPDRCube* const cube, const V3IPDRCubeList::const_iterator& ix) {
+V3SIPDRFrame::removeSubsumed(const V3SIPDRCube* const cube, const V3SIPDRCubeList::const_iterator& ix) {
    // This function checks whether there's any existing cube in this frame subsumed by cube.
    // If such cube is found, remove it from _cubeList
    assert (cube); const V3NetVec& cubeState = cube->getState();
    const uint64_t cubeSignature = cube->getSignature();
-   V3IPDRCubeList::iterator it = _cubeList.begin();
+   V3SIPDRCubeList::iterator it = _cubeList.begin();
    while (it != ix) {
       const V3NetVec& state = (*it)->getState();
       // Early Return
@@ -120,10 +122,10 @@ V3IPDRFrame::removeSubsumed(const V3IPDRCube* const cube, const V3IPDRCubeList::
 }
 
 void
-V3IPDRFrame::removeSelfSubsumed() {
+V3SIPDRFrame::removeSelfSubsumed() {
    // This function checks whether some cubes in this frame can be subsumed by the other cube
    // Remove all cubes that are subsumed by the cube in this frame from _cubeList
-   V3IPDRCubeList::const_iterator ix;
+   V3SIPDRCubeList::const_iterator ix;
    uint32_t candidates = 1;
    while (candidates <= _cubeList.size()) {
       ix = _cubeList.begin(); for (uint32_t i = candidates; i < _cubeList.size(); ++i) ++ix;
@@ -132,14 +134,13 @@ V3IPDRFrame::removeSelfSubsumed() {
 }
 
 /* -------------------------------------------------- *\
- * Class V3VrfIPDR Implementations
+ * Class V3SVrfIPDR Implementations
 \* -------------------------------------------------- */
 // Constructor and Destructor
-V3VrfIPDR::V3VrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
+V3SVrfIPDR::V3SVrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
    // Private Data Members
-   _pdrFrame.clear(); _pdrBad = 0; _pdrSize = 0; _pdrAttr = 0;
-   // Recycle Members
-   _pdrBackup.clear(); _pdrActBackup.clear(); _pdrSvrBackup.clear(); _pdrRecycle = V3NtkUD; _pdrActCount.clear();
+   _pdrFrame.clear(); _pdrBad = 0; _pdrSize = 0;
+
    // Private Engines
    _pdrSvr.clear(); _pdrSim = 0; _pdrGen = 0;
    // Private Tables
@@ -157,14 +158,11 @@ V3VrfIPDR::V3VrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
    }
 }
 
-V3VrfIPDR::~V3VrfIPDR() {
+V3SVrfIPDR::~V3SVrfIPDR() {
    // Private Data Members
    for (uint32_t i = 0; i < _pdrFrame.size(); ++i) delete _pdrFrame[i]; _pdrFrame.clear();
    if (_pdrBad) delete _pdrBad; _pdrBad = 0;
-   // Recycle Members
-   for (uint32_t i = 0; i < _pdrBackup.size(); ++i) delete _pdrBackup[i]; _pdrBackup.clear();
-   for (uint32_t i = 0; i < _pdrSvrBackup.size(); ++i) delete _pdrSvrBackup[i];
-   _pdrSvrBackup.clear(); _pdrActBackup.clear(); _pdrActCount.clear();
+
    // Private Engines
    for (uint32_t i = 0; i < _pdrSvr.size(); ++i) delete _pdrSvr[i];
    _pdrSvr.clear(); if (_pdrGen) delete _pdrGen; _pdrGen = 0;
@@ -188,65 +186,30 @@ V3VrfIPDR::~V3VrfIPDR() {
 isIncKeepLastReachability(): If the last result is unsat, put the inductive invariant into the last frame.
 isIncContinueOnLastSolver(): Valid only if isIncKeepLastReachability() is true.
 \* ---------------------------------------------------------------------------------------------------- */
-void test(){
-   V3Map<uint32_t, uint32_t>::Map::iterator it;
-   V3Map<uint32_t, uint32_t, V3UI32LessOrEq<uint32_t> >::Map GG;
-   for (uint32_t i = 0; i < 5; ++i) {
-      GG.insert(make_pair(2*i, i));
-   }
-   for (it = GG.begin(); it != GG.end(); ++it) {
-      cout << it-> first << " ";
-   }
-   cout << endl;
-}
 void
-V3VrfIPDR::startVerify(const uint32_t& p) {
-vrfRestart: 
-   //setEndline(true);
-   //setIncKeepSilent(true);
-   //test();
-   // Check Shared Results
-   if (_sharedBound && V3NtkUD == _sharedBound->getBound(p)) return;
-   
+V3SVrfIPDR::startVerify(const uint32_t& p) {
+
    // Clear Verification Results
    clearResult(p); if (profileON()) _totalStat->start();
-   
+
    // Consistency Check
    consistencyCheck(); assert (!_constr.size());
-   if (!reportUnsupportedInitialState()) return;
-   
-   // Initialize Backup Data
-   for (uint32_t i = 0; i < _pdrBackup.size(); ++i) delete _pdrBackup[i];
-   for (uint32_t i = 0; i < _pdrSvrBackup.size(); ++i) delete _pdrSvrBackup[i];
-   _pdrBackup.clear(); _pdrSvrBackup.clear(); _pdrActBackup.clear();
-   if (_pdrFrame.size()) {
-      if (isIncKeepLastReachability()) {
-         // Backup frames in the order: ..., 2, 1
-         _pdrBackup.reserve(_pdrFrame.size() - 1); delete _pdrFrame[0];
-         for (uint32_t i = _pdrFrame.size() - 1; i > 0; --i) _pdrBackup.push_back(_pdrFrame[i]);
-      }
-      else { for (uint32_t i = 0; i < _pdrFrame.size(); ++i) delete _pdrFrame[i]; }
-      // Backup solvers
-      if (isIncKeepLastReachability() && isIncContinueOnLastSolver()) {
-         uint32_t i = _pdrSvr.size(); assert (_pdrSvr.size() == _pdrActCount.size());
-         _pdrSvrBackup.reserve(i); _pdrActBackup.reserve(i);
-         while (i--) { _pdrSvrBackup.push_back(_pdrSvr[i]); _pdrActBackup.push_back(_pdrActCount[i]); }
-      }
-      else { for (uint32_t i = 0; i < _pdrSvr.size(); ++i) delete _pdrSvr[i]; }
-      _pdrFrame.clear(); _pdrActCount.clear(); _pdrSvr.clear();
-   }
 
-   // Initialize Other Members
-   if (!isIncKeepLastReachability()) _pdrPriority.clear();
-   if (_pdrBad) delete _pdrBad; _pdrBad = 0; if (_pdrGen) delete _pdrGen; _pdrGen = 0;
-   if (dynamic_cast<V3BvNtk*>(_vrfNtk)) {
-      _pdrGen = new V3AlgBvGeneralize(_handler); assert (_pdrGen);
-      _pdrSim = dynamic_cast<V3AlgBvSimulate*>(_pdrGen); assert (_pdrSim);
-   }
-   else {
-      _pdrGen = new V3AlgAigGeneralize(_handler); assert (_pdrGen);
-      _pdrSim = dynamic_cast<V3AlgAigSimulate*>(_pdrGen); assert (_pdrSim);
-   }
+   if (!reportUnsupportedInitialState()) return;                           
+/*
+   V3NtkTemDecomp* const pNtk = new V3NtkTemDecomp(_handler, boundDepth, true); assert (pNtk);
+
+   //printNetlist(pNtk);
+
+   V3NetId id; V3NetVec p2cMap, c2pMap; V3RepIdHash repIdHash; repIdHash.clear();
+   simpNtk = duplicateNtk(pNtk, p2cMap, c2pMap); assert (simpNtk);
+
+   printNetlist(simpNtk);
+*/
+
+   _pdrGen = new V3AlgAigGeneralize(_handler); assert (_pdrGen);
+   _pdrSim = dynamic_cast<V3AlgAigSimulate*>(_pdrGen); assert (_pdrSim);
+
    V3NetVec simTargets(1, _vrfNtk->getOutput(p)); _pdrSim->reset(simTargets);
 
    // Initialize Pattern Input Size
@@ -258,56 +221,30 @@ vrfRestart:
    const string flushSpace = string(100, ' ');
    uint32_t proved = V3NtkUD, fired = V3NtkUD;
    struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
-   
+
    // Initialize Signal Priority List
    if (_pdrPriority.size() != _vrfNtk->getLatchSize()) _pdrPriority.resize(_vrfNtk->getLatchSize());
-   
+
    // Initialize Bad Cube
-   _pdrBad = new V3IPDRCube(0); assert (_pdrBad); _pdrBad->setState(V3NetVec(1, pId));
+   _pdrBad = new V3SIPDRCube(0); assert (_pdrBad); _pdrBad->setState(V3NetVec(1, pId));
 
    // Initialize Frame 0
-   _pdrFrame.push_back(new V3IPDRFrame()); assert (_pdrFrame.size() == 1);
-   
+   _pdrFrame.push_back(new V3SIPDRFrame()); assert (_pdrFrame.size() == 1);
+
    // Initialize Solver 0
-   if (_pdrSvrBackup.size()) {
-      _pdrSvr.push_back(_pdrSvrBackup.back()); _pdrSvrBackup.pop_back();
-      _pdrActCount.push_back(_pdrActBackup.back()); _pdrActBackup.pop_back();
-   }
-   initializeSolver(0, isIncContinueOnLastSolver());
+
+   initializeSolver(0);
    assert (_pdrSvr.size() == 1); assert (_pdrSvr.back());
    if (_vrfNtk->getLatchSize()) _pdrSvr.back()->assertInit();  // R0 = I0
 
-   // Continue on the Last Depth
-   while (_pdrBackup.size() && (getIncLastDepthToKeepGoing() > getPDRFrame())) {
-      _pdrFrame.push_back(_pdrBackup.back()); _pdrBackup.pop_back();
-      if (_pdrSvrBackup.size()) {
-         _pdrSvr.push_back(_pdrSvrBackup.back()); _pdrSvrBackup.pop_back();
-         _pdrActCount.push_back(_pdrActBackup.back()); _pdrActBackup.pop_back();
-         initializeSolver(getPDRDepth(), true);
-      }
-      else { initializeSolver(getPDRDepth()); addLastFrameInfoToSolvers(); }
-      // Set p to the Last Frame
-      _pdrSvr[_pdrSvr.size() - 2]->assertProperty(pId, true, 0);
-   }
 
    // Start PDR Based Verification
-   V3IPDRCube* badCube = 0;
+   V3SIPDRCube* badCube = 0;
    while (true) {
       // Check Time Bounds
       gettimeofday(&curtime, NULL);
       if (_maxTime < getTimeUsed(inittime, curtime)) break;
-      // Check Memory Bound
-      if (_sharedMem && !_sharedMem->isMemValid()) break;
-      // Check Shared Results
-      if (_sharedBound && (V3NtkUD == _sharedBound->getBound(p))) break;
-      // Check Shared Networks
-      if (_sharedNtk) {
-         V3NtkHandler* const sharedNtk = _sharedNtk->getNtk(_handler);
-         if (sharedNtk) {
-            setIncKeepLastReachability(true); setIncContinueOnLastSolver(false); setIncLastDepthToKeepGoing(getPDRDepth());
-            _handler = sharedNtk; _vrfNtk = sharedNtk->getNtk(); goto vrfRestart;
-         }
-      }
+
       // Find a Bad Cube as Initial Proof Obligation
       badCube = getInitialObligation();  // SAT(R ^ T ^ !p)
       if (!badCube) {
@@ -319,23 +256,16 @@ vrfRestart:
                Msg(MSG_IFO) << " " << _pdrFrame[i]->getCubeList().size();
             Msg(MSG_IFO) << endl;  // Always Endline At the End of Each Frame
          }
-         if (_sharedBound) _sharedBound->updateBound(p, _pdrFrame.size());
          // Set p to the Last Frame
          _pdrSvr.back()->assertProperty(pId, true, 0);
          // Push New Frame
-         //cout << "PDR BACKUP SIZE " << _pdrBackup.size() << endl;
-         if (!_pdrBackup.size()) _pdrFrame.push_back(new V3IPDRFrame());
-         else { _pdrFrame.push_back(_pdrBackup.back()); _pdrBackup.pop_back(); }
-         if (_pdrSvrBackup.size()) {
-            //cout << "@@\n";
-            _pdrSvr.push_back(_pdrSvrBackup.back()); _pdrSvrBackup.pop_back();
-            _pdrActCount.push_back(_pdrActBackup.back()); _pdrActBackup.pop_back();
-            initializeSolver(getPDRDepth(), true);
-         }
-         else { initializeSolver(getPDRDepth()); addLastFrameInfoToSolvers(); }
+         _pdrFrame.push_back(new V3SIPDRFrame());
+
+         initializeSolver(getPDRDepth()); addLastFrameInfoToSolvers();
          assert (_pdrSvr.back()); assert (_pdrSvr.size() == _pdrFrame.size());
+
          if (propagateCubes()) { proved = getPDRDepth(); break; }
-         if (_maxDepth <= (getPDRFrame() - 1)) break;
+
       }
       else {
          badCube = recursiveBlockCube(badCube);
@@ -375,10 +305,12 @@ vrfRestart:
          Msg(MSG_IFO) << *_totalStat << endl;
       }
    }
+
+
    // Record CounterExample Trace or Invariant
    if (V3NtkUD != fired) {  // Record Counter-Example
       // Compute PatternCount
-      const V3IPDRCube* traceCube = badCube; assert (traceCube); assert (existInitial(traceCube->getState()));
+      const V3SIPDRCube* traceCube = badCube; assert (traceCube); assert (existInitial(traceCube->getState()));
       uint32_t patternCount = 0; while (_pdrBad != traceCube) { traceCube = traceCube->getNextCube(); ++patternCount; }
       V3CexTrace* const cex = new V3CexTrace(patternCount); assert (cex);
       _result[p].setCexTrace(cex); assert (_result[p].isCex());
@@ -401,10 +333,9 @@ vrfRestart:
          cex->setInit(initValue);
       }
       // Delete Cubes on the Trace
-      const V3IPDRCube* lastCube; traceCube = badCube;
+      const V3SIPDRCube* lastCube; traceCube = badCube;
       while (_pdrBad != traceCube) { lastCube = traceCube->getNextCube(); delete traceCube; traceCube = lastCube; }
-      // Check Common Results
-      if (isIncVerifyUsingCurResult()) checkCommonCounterexample(p, *cex);
+
    }
    else if (V3NtkUD != proved) {  // Record Inductive Invariant
       _result[p].setIndInv(_vrfNtk); assert (_result[p].isInv());
@@ -412,62 +343,40 @@ vrfRestart:
       uint32_t f = 1; for (; f < getPDRDepth(); ++f) if (!_pdrFrame[f]->getCubeList().size()) break;
       assert (f < getPDRDepth());
       for (uint32_t i = 1 + f; i < getPDRDepth(); ++i) {
-         const V3IPDRCubeList& cubeList = _pdrFrame[i]->getCubeList(); V3IPDRCubeList::const_iterator it;
+         const V3SIPDRCubeList& cubeList = _pdrFrame[i]->getCubeList(); V3SIPDRCubeList::const_iterator it;
          for (it = cubeList.begin(); it != cubeList.end(); ++it) _pdrFrame.back()->pushCube(*it);
          _pdrFrame[i]->clearCubeList(); delete _pdrFrame[i]; delete _pdrSvr[i];
       }
       // Remove Empty Frames
       _pdrFrame[f] = _pdrFrame.back(); while ((1 + f) != _pdrFrame.size()) _pdrFrame.pop_back();
-      _pdrActCount[f] = _pdrActCount.back(); while ((1 + f) != _pdrActCount.size()) _pdrActCount.pop_back();
       _pdrFrame.back()->removeSelfSubsumed(); delete _pdrSvr.back(); while ((1 + f) != _pdrSvr.size()) _pdrSvr.pop_back();
-      // Check Common Results
-      if (isIncVerifyUsingCurResult()) {
-         const V3IPDRCubeList& invCubeList = _pdrFrame.back()->getCubeList();
-         V3NetTable invList; invList.clear(); invList.reserve(invCubeList.size());
-         for (V3IPDRCubeList::const_iterator it = invCubeList.begin(); it != invCubeList.end(); ++it)
-            invList.push_back((*it)->getState()); checkCommonProof(p, invList, false);
-      }
    }
 }
 
 // PDR Initialization Functions
 void
-V3VrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
+V3SVrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
    if (profileON()) _initSvrStat->start();
-   const bool isNewSolver = (d >= _pdrSvr.size());
-   if (d < _pdrSvr.size()) {  // Recycle Solver
-      //cout << "entered recycle\n";
-      assert (d < _pdrActCount.size());
-      if (isReuse) _pdrSvr[d]->update();
-      else { _pdrSvr[d]->reset(); _pdrActCount[d] = _pdrRecycle; }
-   }
-   else {  // New Solver
-      assert (d == _pdrActCount.size()); assert (d == _pdrSvr.size());
-      _pdrSvr.push_back(d ? referenceSolver(_pdrSvr[0]) : allocSolver(getSolver(), _vrfNtk));
-      assert (_pdrSvr[d]->totalSolves() == 0); _pdrActCount.push_back(_pdrRecycle);
-   }
-   // Set Initial State to Solver
+   // New Solver
+   assert (d == _pdrSvr.size());
+   _pdrSvr.push_back(d ? referenceSolver(_pdrSvr[0]) : allocSolver(getSolver(), _vrfNtk));
+   assert (_pdrSvr[d]->totalSolves() == 0);
+
+   // Set Initial State to Solver //can use a dirty function here
    for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) _pdrSvr[d]->addBoundedVerifyData(_vrfNtk->getLatch(i), 0);
+
    // Set p to this Frame if it is NOT the Last Frame
    _pdrSvr[d]->addBoundedVerifyData(_pdrBad->getState()[0], 0);
    if (d != getPDRDepth()) _pdrSvr[d]->assertProperty(_pdrBad->getState()[0], true, 0);
-   // Check Shared Invariants
-   if (_sharedInv && ((1 + d) == _pdrSvr.size())) {
-      V3NetTable sharedInv; _sharedInv->getInv(sharedInv);
-      for (uint32_t i = 0; i < sharedInv.size(); ++i) {
-         V3IPDRCube* const inv = new V3IPDRCube(0); assert (inv);
-         inv->setState(sharedInv[i]); addBlockedCube(make_pair(getPDRDepth(), inv));
-      }
-   }
+
    // Consistency Check
    assert (_pdrFrame.size() == _pdrSvr.size());
-   assert (_pdrFrame.size() == _pdrActCount.size());
-   if (isNewSolver) _pdrSvr[d]->simplify();
+   _pdrSvr[d]->simplify();
    if (profileON()) _initSvrStat->end();
 }
 
 void
-V3VrfIPDR::addCubeToSolver(const uint32_t& frame, const V3NetVec& state, const uint32_t& d) {
+V3SVrfIPDR::addCubeToSolver(const uint32_t& frame, const V3NetVec& state, const uint32_t& d) {
    assert (frame < _pdrSvr.size()); assert (_pdrSvr[frame]);
    assert (state.size()); assert (d < 2);
    for (uint32_t i = 0; i < state.size(); ++i) {
@@ -476,13 +385,14 @@ V3VrfIPDR::addCubeToSolver(const uint32_t& frame, const V3NetVec& state, const u
    }
 }
 void
-V3VrfIPDR::addLastFrameInfoToSolvers() {
+V3SVrfIPDR::addLastFrameInfoToSolvers() {
    assert (_pdrFrame.size() > 1);
-   const V3IPDRCubeList& cubeList = _pdrFrame.back()->getCubeList(); 
+   const V3SIPDRCubeList& cubeList = _pdrFrame.back()->getCubeList(); 
    //cout << "c size" << cubeList.size() << endl;
+   // seems like an empty function when no restart
    if (!cubeList.size()) return;
    V3SvrDataVec formula; formula.clear(); size_t fId;
-   for (V3IPDRCubeList::const_reverse_iterator it = cubeList.rbegin(); it != cubeList.rend(); ++it) {
+   for (V3SIPDRCubeList::const_reverse_iterator it = cubeList.rbegin(); it != cubeList.rend(); ++it) {
       const V3NetVec& state = (*it)->getState(); assert (state.size());
       for (uint32_t d = 1; d < _pdrFrame.size(); ++d) {
          formula.reserve(state.size()); addCubeToSolver(d, state, 0);
@@ -496,33 +406,12 @@ V3VrfIPDR::addLastFrameInfoToSolvers() {
 }
 
 void
-V3VrfIPDR::recycleSolver(const uint32_t& d) {
-   assert (d < _pdrActCount.size()); assert (!_pdrActCount[d]);
-   // Initialize Solver
-   initializeSolver(d);
-   // Push Cubes into the Solver
-   if (!d) { if (_vrfNtk->getLatchSize()) _pdrSvr[d]->assertInit(); }
-   else {
-      V3SvrDataVec formula; formula.clear(); size_t fId;
-      for (uint32_t i = d; i < _pdrFrame.size(); ++i) {
-         const V3IPDRCubeList& cubeList = _pdrFrame[i]->getCubeList();
-         for (V3IPDRCubeList::const_reverse_iterator it = cubeList.rbegin(); it != cubeList.rend(); ++it) {
-            formula.reserve((*it)->getState().size()); addCubeToSolver(d, (*it)->getState(), 0);
-            for (uint32_t j = 0; j < (*it)->getState().size(); ++j) {
-               fId = _pdrSvr[d]->getFormula(_vrfNtk->getLatch((*it)->getState()[j].id), 0);
-               formula.push_back((*it)->getState()[j].cp ? fId : _pdrSvr[d]->getNegFormula(fId));
-            }
-            _pdrSvr[d]->assertImplyUnion(formula); formula.clear();
-         }
-      }
-   }
-   // Add Shared Invariants
-   _pdrSvr[d]->simplify();
+V3SVrfIPDR::recycleSolver(const uint32_t& d) {
 }
 
 // PDR Main Functions
-V3IPDRCube* const
-V3VrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
+V3SIPDRCube* const
+V3SVrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
    const uint32_t d = getPDRDepth(); _pdrSvr[d]->assumeRelease(); assert (_pdrBad);
    const V3NetVec& state = _pdrBad->getState(); assert (1 == state.size());
    _pdrSvr[d]->assumeProperty(state[0], false, 0);
@@ -531,23 +420,23 @@ V3VrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
    const bool result = _pdrSvr[d]->assump_solve();
    if (profileON()) _solveStat->end();
    if (!result) return 0;
-   V3IPDRCube* const cube = extractModel(d, _pdrBad);
+   V3SIPDRCube* const cube = extractModel(d, _pdrBad);
    assert (cube); return cube;
 }
 
-V3IPDRCube* const
-V3VrfIPDR::recursiveBlockCube(V3IPDRCube* const badCube) {
+V3SIPDRCube* const
+V3SVrfIPDR::recursiveBlockCube(V3SIPDRCube* const badCube) {
    // Create a Queue for Blocking Cubes
-   V3BucketList<V3IPDRCube*> badQueue(getPDRFrame());
+   V3BucketList<V3SIPDRCube*> badQueue(getPDRFrame());
    assert (badCube); badQueue.add(getPDRDepth(), badCube);
    // Block Cubes from the Queue
-   V3IPDRTimedCube baseCube, generalizedCube;
+   V3SIPDRTimedCube baseCube, generalizedCube;
    while (badQueue.pop(baseCube.first, baseCube.second)) {
       assert (baseCube.first < getPDRFrame());
       if (!baseCube.first) {
          // Clear All Cubes in badQueue before Return
-         V3Set<const V3IPDRCube*>::Set traceCubes; traceCubes.clear();
-         const V3IPDRCube* traceCube = baseCube.second;
+         V3Set<const V3SIPDRCube*>::Set traceCubes; traceCubes.clear();
+         const V3SIPDRCube* traceCube = baseCube.second;
          while (true) {
             traceCubes.insert(traceCube); if (_pdrBad == traceCube) break;
             traceCube = traceCube->getNextCube();
@@ -568,53 +457,32 @@ V3VrfIPDR::recursiveBlockCube(V3IPDRCube* const badCube) {
             badQueue.add(baseCube.first, baseCube.second);  // This Cube has not yet been blocked (postpone to future)
          }
          else {  // UNSAT, Blocked
-            bool satGen = true;
-            while (true) {
-               if (profileON()) _generalStat->start();
-               generalizedCube.first = baseCube.first;
-               generalizedCube.second = new V3IPDRCube(*(baseCube.second));
-               generalization(generalizedCube);  // Generalization
-               if (profileON()) _generalStat->end();
-               addBlockedCube(generalizedCube);  // Record this Cube that is bad and to be blocked
-               // I found Niklas Een has modified the original IWLS paper and alter the line below
-               // However, I suggest the alteration restricts PDR (i.e. fold-free) and does not help
-               if (satGen && (baseCube.first < getPDRDepth()) && (generalizedCube.first < getPDRFrame()))
-                  badQueue.add(baseCube.first + 1, baseCube.second);
-               //if ((baseCube.first < getPDRDepth()) && (generalizedCube.first < getPDRDepth()))
-               //   badQueue.add(generalizedCube.first + 1, baseCube.second);
-               cout << isForwardSATGen() ;
-               if (!isForwardSATGen() || getPDRDepth() <= generalizedCube.first) break;
-               baseCube.second = forwardModel(generalizedCube.second); if (!baseCube.second) break;
-               baseCube.first = baseCube.first + 1; satGen = false;
-               if (checkReachability(baseCube.first, baseCube.second->getState())) break;
-            }
+            if (profileON()) _generalStat->start();
+            generalizedCube.first = baseCube.first;
+            generalizedCube.second = new V3SIPDRCube(*(baseCube.second));
+            generalization(generalizedCube);  // Generalization
+            if (profileON()) _generalStat->end();
+            addBlockedCube(generalizedCube);  // Record this Cube that is bad and to be blocked
+            if ((baseCube.first < getPDRDepth()) && (generalizedCube.first < getPDRFrame()))
+               badQueue.add(baseCube.first + 1, baseCube.second);
          }
       }
-      //else delete baseCube.second;
    }
    return 0;
 }
 
-#ifdef V3_IPDR_USE_PROPAGATE_LOW_COST
+
 const bool
-V3VrfIPDR::propagateCubes() {
+V3SVrfIPDR::propagateCubes() {
    if (profileON()) _propagateStat->start();
    // Check Each Frame if some Cubes can be Further Propagated
    for (uint32_t i = 1; i < getPDRDepth(); ++i) {
-      const V3IPDRCubeList& cubeList = _pdrFrame[i]->getCubeList();
-#ifdef V3_IPDR_USE_PROPAGATE_BACKWARD
-      // Backward Version  (Check from rbegin() to rend())
-      uint32_t candidates = 1; V3IPDRCubeList::const_iterator it;
-      while (candidates <= cubeList.size()) {
-         it = cubeList.begin(); for (uint32_t j = candidates; j < cubeList.size(); ++j) ++it;
-#else
-      // Forward Version  (Check from begin() to end())
-      V3IPDRCubeList::const_iterator it = cubeList.begin();
+      const V3SIPDRCubeList& cubeList = _pdrFrame[i]->getCubeList();
+      V3SIPDRCubeList::const_iterator it = cubeList.begin();
       while (it != cubeList.end()) {
-#endif
          // Check if this cube can be pushed forward (closer to All Frame)
          if (!checkReachability(i + 1, (*it)->getState(), false)) {
-            V3IPDRTimedCube cube = make_pair(i + 1, new V3IPDRCube(*(*it)));
+            V3SIPDRTimedCube cube = make_pair(i + 1, new V3SIPDRCube(*(*it)));
             // Remove cubes in this frame that can be subsumed by the cube
             _pdrFrame[i]->removeSubsumed(cube.second, ++it);
             // Remove Cubes in the Next Frame that can be Subsumed by the cube
@@ -625,13 +493,7 @@ V3VrfIPDR::propagateCubes() {
          else {
             // Remove cubes in this frame that can be subsumed by the cube
             _pdrFrame[i]->removeSubsumed(*it, it);
-#ifdef V3_IPDR_USE_PROPAGATE_BACKWARD
-            // Backward Version  (Check from rbegin() to rend())
-            ++candidates;
-#else
-            // Forward Version  (Check from begin() to end())
             ++it;
-#endif
          }
       }
       // Check if Any Remaining Cubes in this Frame can be Subsumed
@@ -647,70 +509,14 @@ V3VrfIPDR::propagateCubes() {
    if (profileON()) _propagateStat->end();
    return false;
 }
-#else
-const bool
-V3VrfIPDR::propagateCubes() {
-   if (profileON()) _propagateStat->start();
-   // Check Each Frame if some Cubes can be Further Propagated
-   for (uint32_t i = 1; i < getPDRDepth(); ++i) {
-      const V3IPDRCubeList& cubeList = _pdrFrame[i]->getCubeList();
-#ifdef V3_IPDR_USE_PROPAGATE_BACKWARD
-      // Backward Version  (Check from rbegin() to rend())
-      uint32_t candidates = 1; V3IPDRCubeList::const_iterator it;
-      while (candidates <= cubeList.size()) {
-         it = cubeList.begin(); for (uint32_t j = candidates; j < cubeList.size(); ++j) ++it;
-#else
-      // Forward Version  (Check from begin() to end())
-      V3IPDRCubeList::const_iterator it = cubeList.begin();
-      while (it != cubeList.end()) {
-#endif
-         // Check if this cube can be pushed forward (closer to the last frame)
-         if (!checkReachability(i + 1, (*it)->getState(), false)) {
-            V3IPDRTimedCube cube = make_pair(i + 1, new V3IPDRCube(*(*it)));
-            // Block this cube again at higher frames
-            removeFromProof(cube); addBlockedCube(cube);
-            // Remove blocked cubes in lower frames that can be subsumed by the cube
-            for (uint32_t j = 1; j < i; ++j) _pdrFrame[j]->removeSubsumed(cube.second);
-            // Remove Cubes in this Frame that can be Subsumed by the cube
-            _pdrFrame[i]->removeSubsumed(cube.second, ++it);
-            // NOTE: Need not to recover iterator after subsumption (set.erase), 
-            //       the iterator it will point to the next candidate
-         }
-         else {
-            // Remove blocked cubes in lower frames that can be subsumed by the cube
-            for (uint32_t j = 1; j < i; ++j) _pdrFrame[j]->removeSubsumed(*it);
-#ifdef V3_IPDR_USE_PROPAGATE_BACKWARD
-            // Backward Version  (Check from rbegin() to rend())
-            ++candidates;
-#else
-            // Forward Version  (Check from begin() to end())
-            ++it;
-#endif
-         }
-      }
-      // Check if Any Remaining Cubes in this Frame can be Subsumed
-      _pdrFrame[i]->removeSelfSubsumed();
-      // Check Inductive Invariant
-      for (uint32_t j = 1; j <= i; ++j) 
-         if (!_pdrFrame[j]->getCubeList().size()) {
-            if (profileON()) _propagateStat->end();
-            return true;
-         }
-   }
-   // Check if Any Remaining Cubes in the Last Frame can be Subsumed
-   _pdrFrame[getPDRDepth()]->removeSelfSubsumed();
-   if (profileON()) _propagateStat->end();
-   return false;
-}
-#endif
+
 
 // PDR Auxiliary Functions
 const bool
-V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, const bool& extend) {
+V3SVrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, const bool& extend) {
    assert (frame > 0); assert (frame < getPDRFrame());
-   // Check if Recycle is Triggered
-   const uint32_t& d = frame - 1; assert (d < _pdrActCount.size());
-   if (!_pdrActCount[d]) recycleSolver(d); _pdrSvr[d]->assumeRelease();
+   const uint32_t& d = frame - 1;
+   _pdrSvr[d]->assumeRelease();
    // Assume cube'
    addCubeToSolver(d, cubeState, 1);
    for (uint32_t i = 0; i < cubeState.size(); ++i)
@@ -731,7 +537,7 @@ V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, c
       const bool result = _pdrSvr[d]->assump_solve();
       if (profileON()) _solveStat->end();
       _pdrSvr[d]->assertProperty(_pdrSvr[d]->getNegFormula(_pdrSvrData));  // Invalidate ~cube in future solving
-      --_pdrActCount[d]; return result;
+      return result;
    }
    else {
       if (profileON()) _solveStat->start();
@@ -743,27 +549,16 @@ V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, c
 }
 
 const bool
-V3VrfIPDR::isBlocked(const V3IPDRTimedCube& timedCube) {
+V3SVrfIPDR::isBlocked(const V3SIPDRTimedCube& timedCube) {
    // Check if cube has already been blocked by R (at specified frame)
    // Perform Subsumption Check : cube implies some C in R (at specified frame)
    for (uint32_t i = timedCube.first; i < _pdrFrame.size(); ++i) 
       if (_pdrFrame[i]->subsumes(timedCube.second)) return true;
-   /*
-   // Check by SAT
-   const uint32_t d = timedCube.first; _pdrSvr[d]->assumeRelease();
-   const V3NetVec& state = timedCube.second->getState(); addCubeToSolver(d, state, 0);
-   for (uint32_t i = 0; i < state.size(); ++i)
-      _pdrSvr[d]->assumeProperty(_pdrSvr[d]->getFormula(_vrfNtk->getLatch(state[i].id), 0), state[i].cp);
-   if (profileON()) _solveStat->start();
-   const bool result = _pdrSvr[timedCube.first]->assump_solve();
-   if (profileON()) _solveStat->end();
-   return !result;
-   */
    return false;
 }
 
 const bool
-V3VrfIPDR::existInitial(const V3NetVec& state) {
+V3SVrfIPDR::existInitial(const V3NetVec& state) {
    for (uint32_t i = 0; i < state.size(); ++i) {
       assert (state[i].id < _pdrInitConst.size());
       assert (state[i].id < _pdrInitValue.size());
@@ -772,17 +567,17 @@ V3VrfIPDR::existInitial(const V3NetVec& state) {
    return true;
 }
 
-V3IPDRCube* const
-V3VrfIPDR::extractModel(const uint32_t& d, const V3IPDRCube* const nextCube) {
+V3SIPDRCube* const
+V3SVrfIPDR::extractModel(const uint32_t& d, const V3SIPDRCube* const nextCube) {
    // This function can ONLY be called after SAT of (R ^ T ^ nextCube') and generalize curCube from R
-   V3IPDRCube* const cube = new V3IPDRCube(nextCube);  // Create Cube
+   V3SIPDRCube* const cube = new V3SIPDRCube(nextCube);  // Create Cube
    generalizeSimulation(d, cube, nextCube);  // Apply Simulation for the witness
    // Record Input to Proof Obligation for Trace Logging
    if (_pdrSize) recordCubeInputForTraceLog(cube); return cube;
 }
 
-V3IPDRCube* const
-V3VrfIPDR::forwardModel(const V3IPDRCube* const curCube) {
+V3SIPDRCube* const
+V3SVrfIPDR::forwardModel(const V3SIPDRCube* const curCube) {
    assert (curCube); if (!curCube->getNextCube()) return 0;
    // Set Pattern Values for Simulator
    if (_pdrSize) {
@@ -810,20 +605,20 @@ V3VrfIPDR::forwardModel(const V3IPDRCube* const curCube) {
       }
    }
    if (existInitial(nextState)) return 0;
-   V3IPDRCube* const cube = new V3IPDRCube(0); assert (cube);
+   V3SIPDRCube* const cube = new V3SIPDRCube(0); assert (cube);
    cube->setState(nextState); return cube;
 }
 
 
 void
-V3VrfIPDR::generalization(V3IPDRTimedCube& generalizedCube) {
+V3SVrfIPDR::generalization(V3SIPDRTimedCube& generalizedCube) {
    removeFromProof(generalizedCube);
    generalizeProof(generalizedCube);
    forwardProof(generalizedCube);
 }
 
 void
-V3VrfIPDR::addBlockedCube(const V3IPDRTimedCube& cube) {
+V3SVrfIPDR::addBlockedCube(const V3SIPDRTimedCube& cube) {
    assert (cube.first < _pdrSvr.size()); assert (cube.second->getState().size());
    // Push cube into corresponding frame that it should be blocked
    if (!_pdrFrame[cube.first]->pushCube(cube.second)) return;
@@ -842,7 +637,7 @@ V3VrfIPDR::addBlockedCube(const V3IPDRTimedCube& cube) {
 }
 
 void
-V3VrfIPDR::recordCubeInputForTraceLog(V3IPDRCube* const& cube) {
+V3SVrfIPDR::recordCubeInputForTraceLog(V3SIPDRCube* const& cube) {
    assert (cube); assert (_pdrSim);
    V3BitVecX value(_pdrSize), tempValue;
    uint32_t j = 0;
@@ -861,7 +656,7 @@ V3VrfIPDR::recordCubeInputForTraceLog(V3IPDRCube* const& cube) {
 
 // PDR Generalization Functions
 void
-V3VrfIPDR::generalizeSimulation(const uint32_t& d, V3IPDRCube* const cube, const V3IPDRCube* const nextCube) {
+V3SVrfIPDR::generalizeSimulation(const uint32_t& d, V3SIPDRCube* const cube, const V3SIPDRCube* const nextCube) {
    assert (d < _pdrSvr.size()); assert (cube); assert (nextCube);
    assert (nextCube == cube->getNextCube()); assert (_pdrSim);
    // Set Values for Simulator
@@ -894,7 +689,7 @@ V3VrfIPDR::generalizeSimulation(const uint32_t& d, V3IPDRCube* const cube, const
 }
 
 const bool
-V3VrfIPDR::removeFromProof(V3IPDRTimedCube& timedCube) {
+V3SVrfIPDR::removeFromProof(V3SIPDRTimedCube& timedCube) {
    // This function can ONLY be called after UNSAT of (R ^ T ^ cube')
    // Generate UNSAT Source from Solver if Possible
    V3SvrDataVec coreProofVars; coreProofVars.clear(); assert (timedCube.first < _pdrSvr.size());
@@ -902,7 +697,7 @@ V3VrfIPDR::removeFromProof(V3IPDRTimedCube& timedCube) {
    if (!coreProofVars.size()) return false;  // Solver does not Support Analyze Conflict
    V3SvrDataSet coreProofVarSet; coreProofVarSet.clear();
    for (uint32_t i = 0; i < coreProofVars.size(); ++i) coreProofVarSet.insert(coreProofVars[i]);
-   const bool isSvrDataInvolved = coreProofVarSet.end() != coreProofVarSet.find(_pdrSvrData); // not used var
+   const bool isSvrDataInvolved = coreProofVarSet.end() != coreProofVarSet.find(_pdrSvrData);
    // Get Proof Related State Variables in UNSAT core
    assert (!existInitial(timedCube.second->getState()));
 
@@ -929,7 +724,7 @@ V3VrfIPDR::removeFromProof(V3IPDRTimedCube& timedCube) {
    }
    // Resolve Intersection with Initial State
    if (!conflictInitial && V3NetUD != conflictId) { newState.insert(newState.begin() + pos, conflictId); }
-   else if( !conflictInitial ) cerr << "GGGG in removing UNSATCore" << endl;
+   else if( !conflictInitial ){ cerr << "GGGG in removing UNSATCore" << endl; assert(0);}
    if (newState.size() < state.size()) timedCube.second->setState(newState);
 
    assert (!existInitial(timedCube.second->getState()));
@@ -937,10 +732,10 @@ V3VrfIPDR::removeFromProof(V3IPDRTimedCube& timedCube) {
 }
 
 void
-V3VrfIPDR::generalizeProof(V3IPDRTimedCube& timedCube) {
+V3SVrfIPDR::generalizeProof(V3SIPDRTimedCube& timedCube) {
    // Apply SAT Solving to further generalize cube
    // Remove Variables from cube after Proof Success
-   V3IPDRCube* const& cube = timedCube.second; assert (!existInitial(cube->getState()));
+   V3SIPDRCube* const& cube = timedCube.second; assert (!existInitial(cube->getState()));
    V3NetVec state(cube->getState()); V3NetId id;
    // Sort Priority of Signals
    V3Map<uint32_t, uint32_t, V3UI32LessOrEq<uint32_t> >::Map priorityMap; priorityMap.clear();
@@ -950,6 +745,7 @@ V3VrfIPDR::generalizeProof(V3IPDRTimedCube& timedCube) {
    }
    for (it = priorityMap.begin(); it != priorityMap.end(); ++it) {
       // Try Removing A State Variable on this Cube
+      // Don't really care detail here, it's right
       id = state[it->second]; assert (state.size() >= (1 + it->second));
       if (state.size() != (1 + it->second)) state[it->second] = state.back();
       state.pop_back();
@@ -972,18 +768,16 @@ V3VrfIPDR::generalizeProof(V3IPDRTimedCube& timedCube) {
    }
    if (state.size() < cube->getState().size()) cube->setState(state);
    assert (!existInitial(timedCube.second->getState()));
-   assert (!checkReachability(timedCube.first, timedCube.second->getState())); 
+   assert (!checkReachability(timedCube.first, timedCube.second->getState()));
 }
 
 void
-V3VrfIPDR::forwardProof(V3IPDRTimedCube& timedCube) {
+V3SVrfIPDR::forwardProof(V3SIPDRTimedCube& timedCube) {
    // Try Pushing the cube to higher frames if possible
    assert (getPDRDepth());  // R0 can never call this function
-   bool unsatGen = false;
    while (timedCube.first < getPDRDepth()) {
-      if (!checkReachability(++timedCube.first, timedCube.second->getState())) unsatGen = removeFromProof(timedCube);
+      if (!checkReachability(++timedCube.first, timedCube.second->getState())) removeFromProof(timedCube);
       else {
-         if (isForwardUNSATGen() && unsatGen && generalizeCex(timedCube)) { unsatGen = false; continue; }
          --timedCube.first; break;
       }
       assert (!existInitial(timedCube.second->getState()));
@@ -992,76 +786,31 @@ V3VrfIPDR::forwardProof(V3IPDRTimedCube& timedCube) {
 }
 
 const bool
-V3VrfIPDR::generalizeCex(V3IPDRTimedCube& timedCube) {
-   // Try Turning the Reachability Check from SAT to UNSAT
-   V3IPDRCube* cube = new V3IPDRCube(*(timedCube.second)); assert (cube);
-   assert (!existInitial(cube->getState()));
-   while (true) {
-      // Get the SAT Model
-      if (!checkReachability(timedCube.first, cube->getState())) break;
-      V3IPDRCube* const prevCube = new V3IPDRCube(cube);  // Create Cube
-      generalizeSimulation(timedCube.first - 1, prevCube, cube);  // Apply Simulation for the witness
-      // Remove Variables of cube with Opposite Polarity in prevCube
-      const V3NetVec cubeState = prevCube->getState(); delete prevCube;
-      V3NetVec state; state.clear(); state.reserve(cube->getState().size());
-      uint32_t j = 0, k = 0, cubeSize = cube->getState().size();
-      while (j < cubeState.size() && k < cube->getState().size()) {
-         assert (!j || (cubeState[j].id > cubeState[j - 1].id));
-         assert (!k || (cube->getState()[k].id > cube->getState()[k - 1].id));
-         if (cubeState[j].id > cube->getState()[k].id) { state.push_back(cube->getState()[k]); ++k; }
-         else if (cubeState[j].id < cube->getState()[k].id) ++j;
-         else { if (cubeState[j].cp == cube->getState()[k].cp) state.push_back(cube->getState()[k]); ++j; ++k; }
-      }
-      for (; k < cube->getState().size(); ++k) state.push_back(cube->getState()[k]);
-      if (cubeSize == state.size() || existInitial(state)) { delete cube; return false; }
-      // Update Cube for the Next Iteration
-      assert (cubeSize > state.size()); cube->setState(state);
-   }
-   assert (cube); timedCube.second->setState(cube->getState());
-   delete cube; return true;
+V3SVrfIPDR::generalizeCex(V3SIPDRTimedCube& timedCube) {
+   return 0;
 }
 
 // PDR Helper Functions
 const bool
-V3VrfIPDR::reportUnsupportedInitialState() {
+V3SVrfIPDR::reportUnsupportedInitialState() {
    _pdrInitConst.clear(); _pdrInitConst.reserve(_vrfNtk->getLatchSize());
    _pdrInitValue.clear(); _pdrInitValue.reserve(_vrfNtk->getLatchSize());
    // Currently Not Support Non-Constant Initial State
-   V3BvNtk* const bvNtk = dynamic_cast<V3BvNtk*>(_vrfNtk);
    V3NetId id; V3BitVecX value; bool ok = true;
-   if (bvNtk) {
-      for (uint32_t i = 0; i < bvNtk->getLatchSize(); ++i) {
-         id = bvNtk->getInputNetId(bvNtk->getLatch(i), 1);
-         if (BV_CONST == bvNtk->getGateType(id)) {
-            value = bvNtk->getInputConstValue(id);
-            _pdrInitConst.push_back('X' != value[0]);
-            _pdrInitValue.push_back('0' == value[0]);
-         }
-         else if (bvNtk->getLatch(i) == id) {
-            _pdrInitConst.push_back(0);
-            _pdrInitValue.push_back(0);
-         }
-         else {
-            Msg(MSG_WAR) << "DFF " << i << " : " << _handler->getNetName(bvNtk->getLatch(i))
-                         << " has Non-Constant Initial Value !!" << endl; ok = false; }
+   const V3AigNtk* const aigNtk = _vrfNtk; assert (aigNtk);
+   for (uint32_t i = 0; i < aigNtk->getLatchSize(); ++i) {
+      id = aigNtk->getInputNetId(aigNtk->getLatch(i), 1);
+      if (AIG_FALSE == aigNtk->getGateType(id)) {
+         _pdrInitConst.push_back(1);
+         _pdrInitValue.push_back(!id.cp);
       }
-   }
-   else {
-      const V3AigNtk* const aigNtk = _vrfNtk; assert (aigNtk);
-      for (uint32_t i = 0; i < aigNtk->getLatchSize(); ++i) {
-         id = aigNtk->getInputNetId(aigNtk->getLatch(i), 1);
-         if (AIG_FALSE == aigNtk->getGateType(id)) {
-            _pdrInitConst.push_back(1);
-            _pdrInitValue.push_back(!id.cp);
-         }
-         else if (aigNtk->getLatch(i) == id) {
-            _pdrInitConst.push_back(0);
-            _pdrInitValue.push_back(0);
-         }
-         else {
-            Msg(MSG_WAR) << "DFF " << i << " : " << _handler->getNetName(aigNtk->getLatch(i))
-                         << " has Non-Constant Initial Value !!" << endl; ok = false; }
+      else if (aigNtk->getLatch(i) == id) {
+         _pdrInitConst.push_back(0);
+         _pdrInitValue.push_back(0);
       }
+      else {
+         Msg(MSG_WAR) << "DFF " << i << " : " << _handler->getNetName(aigNtk->getLatch(i))
+                      << " has Non-Constant Initial Value !!" << endl; ok = false; }
    }
    assert (_pdrInitConst.size() == _pdrInitValue.size());
    return ok;
@@ -1069,10 +818,9 @@ V3VrfIPDR::reportUnsupportedInitialState() {
 
 // PDR Debug Functions
 void
-V3VrfIPDR::printState(const V3NetVec& state) const {
+V3SVrfIPDR::printState(const V3NetVec& state) const {
    for (uint32_t i = 0; i < state.size(); ++i)
       Msg(MSG_IFO) << (state[i].cp ? "~" : "") << state[i].id << " ";
 }
 
 #endif
-

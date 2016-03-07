@@ -12,6 +12,7 @@
 #include "v3CmdMgr.h"
 
 V3_COMMAND(V3SimNtkCmd,       CMD_TYPE_SIMULATE);
+V3_COMMAND(V3TemSimCmd,       CMD_TYPE_SIMULATE);
 V3_COMMAND(V3PlotTraceCmd,    CMD_TYPE_SIMULATE);
 
 #endif
