@@ -21,9 +21,7 @@ const bool performTemporalSim(const V3NtkHandler* const handler, bool verbose){
    ofstream output;
    output.open(outFileName.c_str(),std::ofstream::out);
 
-   V3AlgSimulate* simHandler = 0;
-   if (dynamic_cast<V3BvNtk*>(handler->getNtk())) simHandler = new V3AlgBvSimulate(handler);
-   else simHandler = new V3AlgAigSimulate(handler); assert (simHandler);
+   V3AlgAigSimulate* simHandler = new V3AlgAigSimulate(handler); assert (simHandler);
 
    const V3Ntk* const ntk = handler->getNtk(); assert (ntk);
    uint32_t inputSize = 0;
@@ -31,26 +29,23 @@ const bool performTemporalSim(const V3NtkHandler* const handler, bool verbose){
    for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) inputSize += ntk->getNetWidth(ntk->getInout(i));
 
    V3BitVecX value; string valueStr = "";
+   value.resize(1);
+   value.setX(0);
    vector<V3BitVecX> history;
    unsigned ii = 0;
-   uint32_t j = 0;
-   for (; j < 30; ++j) {
+   assert(ntk->getInoutSize() == 0);
+   V3BitVecS z;
+   z.setZeros(-1);
+   for (uint32_t j = 0; j < 30; ++j) {
       //do { getline(input, valueStr); assert (!input.eof()); } while (!valueStr.size());
       //assert (patternSize == valueStr.size());
       V3BitVecX v_dff(ntk->getLatchSize());
-      simHandler->updateNextStateValue();
+      simHandler->updateNextStateValue(); // all FF are 0 in the beginning
       for (uint32_t i = 0; i < ntk->getInputSize(); ++i) {
-         value.resize(ntk->getNetWidth(ntk->getInput(i)));
-         for (uint32_t x = ntk->getNetWidth(ntk->getInput(i)), k = inputSize - x; k < inputSize; ++k)
-            value.setX(--x);
+         assert ( ntk->getNetWidth(ntk->getInput(i)) == 1);
          simHandler->setSource(ntk->getInput(i), value);
       }
-      for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) {
-         value.resize(ntk->getNetWidth(ntk->getInout(i)));
-         for (uint32_t x = ntk->getNetWidth(ntk->getInout(i)), k = inputSize - x; k < inputSize; ++k)
-            value.setX(--x);
-         simHandler->setSource(ntk->getInout(i), value);
-      }
+
       simHandler->simulate();
 
       simHandler->getStateBV(v_dff,verbose);

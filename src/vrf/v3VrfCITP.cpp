@@ -745,7 +745,7 @@ V3VrfCITP::generalizeSimulation(V3CITPCube* const cube, const V3CITPCube* const 
    V3UI32Vec prioNets; prioNets.clear(); prioNets.reserve(_itpPriority.size());
    for (uint32_t i = 0; i < _itpPriority.size(); ++i) if (!_itpPriority[i]) prioNets.push_back(i);
    for (uint32_t i = 0; i < _itpPriority.size(); ++i) if ( _itpPriority[i]) prioNets.push_back(i);
-   _itpGen->performSetXForNotCOIVars(); _itpGen->performXPropForExtensibleVars(prioNets);
+   _itpGen->performSetXForNotCOIVars(false); _itpGen->performXPropForExtensibleVars(prioNets);
    cube->setState(_itpGen->getGeneralizationResult());
 }
 

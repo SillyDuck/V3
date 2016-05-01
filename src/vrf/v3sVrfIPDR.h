@@ -41,6 +41,7 @@ class V3SIPDRCube
    private : 
       // Private Cube Data
       V3NetVec                _stateId;      // State Variable Index (id) with Value (cp)
+      // be careful it's index
       uint64_t                _signature;    // Subsumption Marker
       // Trace Logging Members
       V3BitVecX               _inputData;    // Primary Input / Inout Values
@@ -100,6 +101,8 @@ class V3SVrfIPDR : public V3VrfBase
       V3SVrfIPDR(const V3NtkHandler* const);
       ~V3SVrfIPDR();
 
+      bool    sim_then_add_cube;
+      bool    tem_decomp;
    private : 
       // Private Attribute Setting Functions
       //inline const bool isForwardSATGen()   const { return _pdrAttr & 1ul; }
@@ -162,6 +165,9 @@ class V3SVrfIPDR : public V3VrfBase
       V3Stat*           _generalStat;     // UNSAT Generalization
       V3Stat*           _propagateStat;   // Propagation
       V3Stat*           _ternaryStat;     // SAT Generalization
+
+      // Data Members for Temporal Decompostition
+      V3SIPDRFrameVec   _temFrames;
 };
 
 // Inline Function Implementations of Cube Setting Functions

@@ -216,7 +216,8 @@ inline V3NtkModule* const V3Ntk::getModule(const V3NetId& id) const {
 inline const uint32_t V3Ntk::getInputNetSize(const V3NetId& id) const {
    assert (validNetId(id)); return _inputData[id.id].size(); }
 inline const V3NetId& V3Ntk::getInputNetId(const V3NetId& id, const uint32_t& i) const {
-   assert (i < getInputNetSize(id)); return _inputData[id.id][i].id; }
+   //assert (i < getInputNetSize(id)); 
+   return _inputData[id.id][i].id; }
 // Inline Function Implementations of Ntk Misc Data Functions
 inline const bool V3Ntk::isLatestMiscData(const V3NetId& id) const {
    assert (validNetId(id)); return _globalMisc == _typeMisc[id.id].misc; }

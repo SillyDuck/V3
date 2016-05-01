@@ -149,7 +149,7 @@ class V3BitVecX
       unsigned char*    _data1;
 };
 
-// Simplified V3BitVecX for Only AND, INV Usage
+// Simplified V3BitVecX for Only AND, INV Usage (00 for X, 01 for 0, 10 for 1, 11 illegal)
 class V3BitVecS
 {
    public : 

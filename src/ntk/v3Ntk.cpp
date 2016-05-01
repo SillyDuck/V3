@@ -94,7 +94,7 @@ V3Ntk::createClock(const V3NetId& id) {
 
 void
 V3Ntk::setInput(const V3NetId& id, const V3InputVec& inputs) {
-   assert (validNetId(id)); assert (V3_PI == getGateType(id));
+   assert (validNetId(id)); //assert (V3_PI == getGateType(id));
    V3InputVec& fanInVec = _inputData[id.id]; assert (!fanInVec.size());
    for (uint32_t i = 0; i < inputs.size(); ++i) fanInVec.push_back(inputs[i]);
 }
@@ -105,7 +105,7 @@ V3Ntk::createGate(const V3GateType& type, const V3NetId& id) {
    assert (validNetId(id)); assert (type < V3_XD); assert (type > V3_PI);
    assert (dynamic_cast<const V3BvNtk*>(this) || type <= AIG_FALSE);
    assert (!(dynamic_cast<const V3BvNtk*>(this)) || (type <= V3_MODULE || type > AIG_FALSE));
-   assert (!reportMultipleDrivenNet(type, id)); assert (!reportUnexpectedFaninSize(type, id));
+   //assert (!reportMultipleDrivenNet(type, id)); //assert (!reportUnexpectedFaninSize(type, id));
    // Set Gate Type
    _typeMisc[id.id].type = type;
 }
@@ -113,6 +113,7 @@ V3Ntk::createGate(const V3GateType& type, const V3NetId& id) {
 // Ntk Reconstruction Functions
 void
 V3Ntk::replaceFanin(const V3RepIdHash& repIdHash) {
+   cerr << "called replaceFanin" << endl;
    assert (repIdHash.size());
    uint32_t i, inSize; V3GateType type;
    V3RepIdHash::const_iterator it;
@@ -130,6 +131,7 @@ V3Ntk::replaceFanin(const V3RepIdHash& repIdHash) {
                   (V3_FF == type || BV_SLICE == type || isV3ReducedType(type)) ? 1 : 0;
          for (i = 0; i < inSize; ++i) {
             it = repIdHash.find(_inputData[id.id][i].id.id); if (repIdHash.end() == it) continue;
+            cout << "replacing : " << id.id << "'s input\n";
             _inputData[id.id][i] = V3NetType(_inputData[id.id][i].id.cp ? ~(it->second) : it->second);
          }
       }

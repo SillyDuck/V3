@@ -153,7 +153,7 @@ class V3NtkHandler
       static void setAuxRenaming();
       static void resetAuxRenaming();
       static const string applyAuxNetNamePrefix(const string&);
-   protected : 
+//   protected : 
       // Private Helper Functions
       const V3NetId getPrimitiveNetId(const V3NetId&) const;
       // Private Ntk Members

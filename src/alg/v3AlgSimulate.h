@@ -88,7 +88,7 @@ class V3AlgAigSimulate : public V3AlgSimulate
       void printResult() const;
       void printHowManyX(int&, int&);
       void getStateBV(V3BitVecX & data, bool);
-   protected : 
+   //protected : 
       // Private Event-Driven Simulation Functions
       void simulateEventList();
       // Private Data Members

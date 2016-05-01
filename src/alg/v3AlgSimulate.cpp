@@ -139,7 +139,7 @@ V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
    z.setZeros(-1);
    int x=0, nx = 0;
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) {
-      if(verbose){
+      if(verbose && ntk->getLatchSize() < 80){
          if( _dffValue[i] == xxx ) cout << "X";
          else if( _dffValue[i] == one ) cout << "1";
          else if( _dffValue[i] == z ) cout << "0";
@@ -155,7 +155,7 @@ V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
       else if( _dffValue[i] == z ) data.set0(i);
       else cout << "?";
    }
-   if(!verbose) cout << x <<"/" << nx;
+   //if(!verbose) cout << "X ratio: " << x <<"/" << nx;
    cout <<endl;
 }
 

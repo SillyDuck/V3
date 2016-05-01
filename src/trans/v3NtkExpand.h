@@ -29,7 +29,7 @@ class V3NtkExpand : public V3NtkHandler
       const V3NetId getNetFromName(const string&) const;
       const V3NetId getParentNetId(const V3NetId&) const;
       const V3NetId getCurrentNetId(const V3NetId&, const uint32_t&) const;
-   private : 
+   //private : 
       // Transformation Functions
       void performNtkTransformation(const bool& = false);
       // Private Members

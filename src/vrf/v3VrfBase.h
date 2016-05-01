@@ -22,6 +22,7 @@ class V3VrfBase
       // Constructor and Destructor
       V3VrfBase(const V3NtkHandler* const);
       virtual ~V3VrfBase();
+      void printNetlist(V3Ntk* _ntk);
       // Constraints Setting Functions
       void setConstraint(const V3NetVec&, const uint32_t&);
       // Verification Main Functions
@@ -68,6 +69,7 @@ class V3VrfBase
       static inline void setDefaultSolver(const V3SolverType& type) { _extSolverType = type; }
       // Solver List Helper Functions
       static inline const V3SolverType getDefaultSolver() { return _extSolverType; }
+      bool                      _tem;
    protected : 
       // Private Verification Main Functions
       void consistencyCheck() const;

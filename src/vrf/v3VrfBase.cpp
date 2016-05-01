@@ -24,6 +24,7 @@ V3SolverType    V3VrfBase::_extSolverType       = V3_SVR_TOTAL;
 
 // Constructor and Destructor
 V3VrfBase::V3VrfBase(const V3NtkHandler* const handler) {
+   _tem = false;
    _handler = const_cast<V3NtkHandler*>(handler); assert (_handler);
    _vrfNtk = handler->getNtk(); assert (_vrfNtk); assert (_vrfNtk->getOutputSize());
    // Private Data Members
@@ -43,6 +44,25 @@ V3VrfBase::~V3VrfBase() {
    _constr.clear(); _result.clear();
    if (_sharedNtk) _sharedNtk->releaseNtk(_handler);
 }
+
+void
+V3VrfBase::printNetlist(V3Ntk* _ntk) {
+   assert (_ntk); V3NetId id = V3NetId::makeNetId(1); V3GateType type;
+   //cout << "NetSize: "<< _ntk->getNetSize() << endl;
+   for (uint32_t i = 1; i < _ntk->getNetSize(); ++i, ++id.id) {
+      assert (i == id.id); Msg(MSG_IFO) << "[" << id.id << "]";
+      type = _ntk->getGateType(id); Msg(MSG_IFO) << " = " << V3GateTypeStr[type];
+      if (V3_FF == type || AIG_NODE == type || isV3PairType(type))
+         Msg(MSG_IFO) <<
+            "(" << (_ntk->getInputNetId(id, 0).cp ? "~" : " ") << ".A(" << _ntk->getInputNetId(id, 0).id << "),"
+                << (_ntk->getInputNetId(id, 1).cp ? "~" : " ") <<  ".B(" << _ntk->getInputNetId(id, 1).id << "))" << endl;
+      else if (V3_PIO == type || isV3ReducedType(type))
+         Msg(MSG_IFO) << 
+            "(" << (_ntk->getInputNetId(id, 0).cp ? "~" : " ") << ".A(" << _ntk->getInputNetId(id, 0).id << "))" << endl;
+      else Msg(MSG_IFO) << endl;
+   }
+}
+
 
 // Constraints Setting Functions
 void

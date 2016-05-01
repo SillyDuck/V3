@@ -86,7 +86,7 @@ class V3AlgGeneralize {
       const V3NetVec getUndecided() const;
       const V3NetVec getGeneralizationResult() const;
       // Preprocessing Techniques
-      virtual void performSetXForNotCOIVars();
+      virtual void performSetXForNotCOIVars(const bool& = false);
       virtual void performFixForControlVars(const bool& = true);
       // Generalization Heuristics
       virtual void performXPropForExtensibleVars(const V3UI32Vec&);
@@ -106,11 +106,12 @@ class V3AlgAigGeneralize : public V3AlgAigSimulate, public V3AlgGeneralize {
       // Generalization Main Functions
       void setTargetNets(const V3NetVec&, const V3NetVec& = V3NetVec());
       // Preprocessing Techniques
-      void performSetXForNotCOIVars();
+      void performSetXForNotCOIVars(const bool& = false);
       void performFixForControlVars(const bool& = true);
       // Generalization Heuristics
       void performXPropForExtensibleVars(const V3UI32Vec&);
       void performXPropForMinimizeTransitions(const uint32_t&, const V3NetVec& = V3NetVec());
+      bool                 _tem;
    private : 
       // Private Generalization Functions
       void simulateForGeneralization(const V3NetId&, const V3BitVecS&);
@@ -135,7 +136,7 @@ class V3AlgBvGeneralize : public V3AlgBvSimulate, public V3AlgGeneralize {
       // Generalization Main Functions
       void setTargetNets(const V3NetVec&, const V3NetVec& = V3NetVec());
       // Preprocessing Techniques
-      void performSetXForNotCOIVars();
+      void performSetXForNotCOIVars(bool);
       void performFixForControlVars(const bool& = true);
       // Generalization Heuristics
       void performXPropForExtensibleVars(const V3UI32Vec&);

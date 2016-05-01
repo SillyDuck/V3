@@ -83,7 +83,7 @@ class V3SNtk
       inline const V3NetId& getFanin(const V3NetId& id, const uint32_t& i) const {
          assert ( !i || i == 1); return i ?  _fanin1Data[id.id].id : _fanin0Data[id.id].id; }
       // Ntk Misc Data Functions
-      inline void newMiscData() { assert (_globalMisc < V3MiscType(0, V3SNTkUD).misc); ++_globalMisc; }
+      inline void newMiscData() { ++_globalMisc; }
       inline const bool isLatestMiscData(const V3NetId& id) const{ return _globalMisc == _typeMisc[id.id].misc; }
       inline void setLatestMiscData(const V3NetId& id) { _typeMisc[id.id].misc = _globalMisc; }
 

@@ -296,7 +296,7 @@ V3AlgGeneralize::getGeneralizationResult() const {
 
 // Preprocessing Techniques
 void
-V3AlgGeneralize::performSetXForNotCOIVars() {
+V3AlgGeneralize::performSetXForNotCOIVars(const bool& tem ) {
    Msg(MSG_ERR) << "Calling virtual function V3AlgGeneralize::performSetXForNotCOIVars() !!" << endl;
 }
 
@@ -325,6 +325,7 @@ V3AlgAigGeneralize::V3AlgAigGeneralize(const V3NtkHandler* const handler) : V3Al
    assert (!dynamic_cast<V3BvNtk*>(_handler->getNtk()));
    _isFrozen = V3BoolVec(_handler->getNtk()->getNetSize());
    _traverse = V3BoolVec(_handler->getNtk()->getNetSize());
+   _tem = false;
 }
 
 V3AlgAigGeneralize::~V3AlgAigGeneralize() {
@@ -362,11 +363,17 @@ V3AlgAigGeneralize::setTargetNets(const V3NetVec& curTargets, const V3NetVec& ne
 
 // Preprocessing Techniques
 void
-V3AlgAigGeneralize::performSetXForNotCOIVars() {
+V3AlgAigGeneralize::performSetXForNotCOIVars(const bool& tem) {
    V3Ntk* const ntk = _handler->getNtk(); assert (ntk); if (!_undecided.size()) return;
    // Mark Fanin Cone from Targets
+   //cerr << "performSetXForNotCOIVars" << endl;
    for (uint32_t i = 0; i < _traverse.size(); ++i) _traverse[i] = false;
-   for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninCone(ntk, _targetId[i], _traverse);
+   if (tem){
+      for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninConeTem(ntk, _targetId[i], _traverse);
+   }
+   else{
+      for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninCone(ntk, _targetId[i], _traverse);
+   }
    // Preprocessing by Removing Variables NOT in COI
    V3NetList::iterator it = _undecided.begin();
    V3NetList::iterator is = _genResult.begin();
@@ -497,7 +504,10 @@ V3AlgAigGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrd
    if (!_undecided.size() || !generalizeOrder.size()) return;
    // Mark Fanin Cone from Targets
    for (uint32_t i = 0; i < _traverse.size(); ++i) _traverse[i] = false;
-   for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninCone(ntk, _targetId[i], _traverse);
+   if(_tem)
+      for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninConeTem(ntk, _targetId[i], _traverse);
+   else
+      for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninCone(ntk, _targetId[i], _traverse);
    // Mark Target Nets
    V3BoolVec isTarget = V3BoolVec(_handler->getNtk()->getNetSize(), false);
    for (uint32_t i = 0; i < _targetId.size(); ++i) isTarget[_targetId[i].id] = true;
@@ -1025,7 +1035,7 @@ V3AlgBvGeneralize::setTargetNets(const V3NetVec& curTargets, const V3NetVec& nex
 
 // Preprocessing Techniques
 void
-V3AlgBvGeneralize::performSetXForNotCOIVars() {
+V3AlgBvGeneralize::performSetXForNotCOIVars(bool) {
    V3Ntk* const ntk = _handler->getNtk(); assert (ntk); if (!_undecided.size()) return;
    // Mark Fanin Cone from Targets
    for (uint32_t i = 0; i < _traverse.size(); ++i) _traverse[i] = false;

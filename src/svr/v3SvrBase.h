@@ -89,6 +89,7 @@ class V3SvrBase
       inline const uint32_t totalSolves() const { return _solves; }
       inline const double totalTime() const { return _runTime; }
       inline const bool validNetId(const V3NetId& id) const { return _ntk->getNetSize() > id.id; }
+      bool                 _tem;
    protected : 
       // Private Network to Solver Functions
       void addVerifyData(const V3NetId&, const uint32_t&);

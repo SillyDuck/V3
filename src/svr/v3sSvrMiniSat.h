@@ -72,7 +72,6 @@ class V3SSvrMiniSat
 
       //v3s functions
       void addFF_FaninConetoSolver(MSolver* solver, V3NetId id){
-         assert( getGateType(id) == 'V3_FF' );
       }
    protected : 
       // Private Network to Solver Functions

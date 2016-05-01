@@ -10,13 +10,14 @@
 #define V3_NTK_TEMDECOMP_H
 
 #include "v3NtkHandler.h"
+#include "v3BitVec.h"
 
 // class V3NtkExpand : Temporal Decomposition
 class V3NtkTemDecomp : public V3NtkHandler
 {
    public : 
       // Constructor and Destructor
-      V3NtkTemDecomp(V3NtkHandler* const, const uint32_t&, const bool& = false);
+      V3NtkTemDecomp(V3NtkHandler* const, const uint32_t&, V3BitVecX &, bool);
       ~V3NtkTemDecomp();
       // Inline Member Functions
       inline const uint32_t& getCycle() const { return _cycle; }
@@ -29,9 +30,9 @@ class V3NtkTemDecomp : public V3NtkHandler
       const V3NetId getNetFromName(const string&) const;
       const V3NetId getParentNetId(const V3NetId&) const;
       const V3NetId getCurrentNetId(const V3NetId&, const uint32_t&) const;
-   private : 
+   //private : 
       // Transformation Functions
-      void performNtkTransformation(const bool& = false);
+      void performNtkTransformation(V3BitVecX &, bool);
       // Private Members
       const uint32_t _cycle;     // Number of Cycles for Expansion
       V3NetVec       _c2pMap;    // V3NetId Mapping From Current to Parent Ntk

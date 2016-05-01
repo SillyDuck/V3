@@ -886,7 +886,7 @@ V3VrfMPDR::generalizeSimulation(V3MPDRCube* const cube, const V3MPDRCube* const 
    V3UI32Vec prioNets; prioNets.clear(); prioNets.reserve(_pdrPriority.size());
    for (uint32_t i = 0; i < _pdrPriority.size(); ++i) if (!_pdrPriority[i]) prioNets.push_back(i);
    for (uint32_t i = 0; i < _pdrPriority.size(); ++i) if ( _pdrPriority[i]) prioNets.push_back(i);
-   _pdrGen->performSetXForNotCOIVars(); _pdrGen->performXPropForExtensibleVars(prioNets);
+   _pdrGen->performSetXForNotCOIVars(false); _pdrGen->performXPropForExtensibleVars(prioNets);
    cube->setState(_pdrGen->getGeneralizationResult());
 }
 

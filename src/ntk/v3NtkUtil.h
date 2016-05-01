@@ -67,6 +67,7 @@ const uint32_t dfsNtkForSimulationOrder(V3Ntk* const, V3NetVec&, const V3NetVec&
 const uint32_t dfsNtkForReductionOrder(V3Ntk* const, V3NetVec&, const V3NetVec& = V3NetVec(), const bool& = false);
 // General DFS Fanin Cone Marking Functions for V3 Ntk
 void dfsMarkFaninCone(V3Ntk* const, const V3NetId&, V3BoolVec&);
+void dfsMarkFaninConeTem(V3Ntk* const, const V3NetId&, V3BoolVec&);
 void dfsMarkFaninCone(V3Ntk* const, const V3NetId&, const V3BoolVec&, V3BoolVec&);
 void dfsMarkFaninCone(V3Ntk* const, const V3NetTable&, V3BoolTable&);
 // General BFS Fanin Cone Indexing Functions for V3 Ntk

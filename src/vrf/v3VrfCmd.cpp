@@ -1034,6 +1034,7 @@ V3PDRVrfCmd::exec(const string& option) {
    V3CmdExec::lexOptions(option, options);
 
    bool maxD = false, maxDON = false, recycle = false, recycleON = false, simp = false;
+   bool frr = false, temdec = false;
    bool incremental = false, fwdSATGen = false, fwdUNSATGen = false;
    uint32_t maxDepth = 0, recycleCount = 0;
    string propertyName = "";
@@ -1073,6 +1074,14 @@ V3PDRVrfCmd::exec(const string& option) {
          cout << "Running Simplified PDR\n";
          simp = true;
       }
+      else if (v3StrNCmp("-FWDRR", token, 6) == 0) {
+         cout << "Turned On Foward Reachability Restriction\n";
+         frr = true;
+      }
+      else if (v3StrNCmp("-TEMDEC", token, 2) == 0) {
+         cout << "Turned On Temporal Decompostition\n";
+         temdec = true;
+      }
       else if (maxDON || recycleON) {
          int temp; if (!v3Str2Int(token, temp)) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
          if (temp <= 0) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
@@ -1100,6 +1109,8 @@ V3PDRVrfCmd::exec(const string& option) {
             if(simp){
                V3SVrfIPDR* const checker = new V3SVrfIPDR(pNtk); assert (checker);
                if (maxD) checker->setMaxDepth(maxDepth);
+               if (frr) checker->sim_then_add_cube = true;
+               if (temdec) checker->tem_decomp = true;
                checker->verifyInOrder();
                if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
                   property->setResult(checker->getResult(0));

@@ -26,22 +26,6 @@ V3SVrfBMC::V3SVrfBMC(const V3NtkHandler* const handler) : V3VrfBase(handler) {
 V3SVrfBMC::~V3SVrfBMC() {
 }
 
-void
-printNetlist(V3Ntk* _ntk) {
-   assert (_ntk); V3NetId id = V3NetId::makeNetId(1); V3GateType type;
-   cout << "NetSize: "<< _ntk->getNetSize() << endl;
-   for (uint32_t i = 1; i < _ntk->getNetSize(); ++i, ++id.id) {
-      assert (i == id.id); Msg(MSG_IFO) << "[" << id.id << "]";
-      type = _ntk->getGateType(id); Msg(MSG_IFO) << " = " << V3GateTypeStr[type];
-      if (V3_FF == type || AIG_NODE == type || isV3PairType(type))
-         Msg(MSG_IFO) << "(.A(" << _ntk->getInputNetId(id, 0).id << "),"
-                      << " .B(" << _ntk->getInputNetId(id, 1).id << "))" << endl;
-      else if (V3_PIO == type || isV3ReducedType(type))
-         Msg(MSG_IFO) << "(.A(" << _ntk->getInputNetId(id, 0).id << "))" << endl;
-      else Msg(MSG_IFO) << endl;
-   }
-}
-
 // Private Verification Main Functions
 void
 V3SVrfBMC::startVerify(const uint32_t& p) {

@@ -17,7 +17,7 @@
 \* -------------------------------------------------- */
 // Constructor and Destructor
 V3SvrBase::V3SvrBase(const V3Ntk* const ntk, const bool& freeBound) : _ntk(ntk), _freeBound(freeBound) {
-   _solves = 0; _runTime = 0;
+   _solves = 0; _runTime = 0; _tem = false;
 }
 
 V3SvrBase::~V3SvrBase() {
@@ -370,7 +370,7 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
    V3Stack<pair<V3NetId, uint32_t> >::Stack netIdList; assert (!netIdList.size());
    pair<V3NetId, uint32_t> netId = make_pair(id, depth); netIdList.push(netId);
    V3GateType type;
-
+   //cout << "tem:" << _tem << endl;
    while (!netIdList.empty()) {
       //cout << "TOP " << id.id << " ";
       netId = netIdList.top(); id = netId.first; depth = netId.second;
@@ -384,8 +384,13 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
             if (!existVerifyData(netId.first, netId.second)) { netIdList.push(netId); continue; }
          }
          else {
-            netId.first = _ntk->getInputNetId(id, 1);
-            if (id.id != netId.first.id && !existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
+            if(!_tem){
+
+            }
+            else{
+               netId.first = _ntk->getInputNetId(id, 1);
+               if (id.id != netId.first.id && !existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
+            }
          }
          add_FF_Formula(id, depth);
       }
