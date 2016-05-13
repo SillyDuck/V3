@@ -304,6 +304,7 @@ V3SvrMiniSat::add_PI_Formula(const V3NetId& out, const uint32_t& depth) {
 
 void
 V3SvrMiniSat::add_FF_Formula(const V3NetId& out, const uint32_t& depth) {
+   cout << "add_FF_Formula : " << out.id << " : " << depth << endl;
    // Check Output Validation
    assert (validNetId(out)); assert (V3_FF == _ntk->getGateType(out)); assert (!getVerifyData(out, depth));
    const uint32_t index = getV3NetIndex(out); assert (depth == _ntkData[index].size());
@@ -363,7 +364,7 @@ V3SvrMiniSat::add_AND_Formula(const V3NetId& out, const uint32_t& depth) {
    // Check Output Validation
    assert (validNetId(out)); assert (!getVerifyData(out, depth));
    assert ((AIG_NODE == _ntk->getGateType(out)) || (BV_AND == _ntk->getGateType(out)));
-   const uint32_t index = getV3NetIndex(out); assert (depth == _ntkData[index].size());
+   const uint32_t index = out.id; assert (depth == _ntkData[index].size());
    const uint32_t width = _ntk->getNetWidth(out); assert (width);
    // Set SATVar
    _ntkData[index].push_back(newVar(_ntk->getNetWidth(out))); assert (getVerifyData(out, depth));

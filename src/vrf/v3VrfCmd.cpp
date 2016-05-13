@@ -211,7 +211,8 @@ V3SetSolverCmd::exec(const string& option) {
    if (!(dft || minisat || boolector)) dft = true;
 
    // Set Verification Solvers
-   if (minisat) V3VrfBase::setDefaultSolver(V3_SVR_MINISAT);
+   //if (minisat) V3VrfBase::setDefaultSolver(V3_SVR_MINISAT);
+   if (minisat) V3VrfBase::setDefaultSolver(V3S_SVR_MINISAT);
    else if (boolector) V3VrfBase::setDefaultSolver(V3_SVR_BOOLECTOR);
    else V3VrfBase::resetSolverSettings();
    // Print Verification Solvers

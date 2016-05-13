@@ -372,26 +372,26 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
    V3GateType type;
    //cout << "tem:" << _tem << endl;
    while (!netIdList.empty()) {
-      //cout << "TOP " << id.id << " ";
       netId = netIdList.top(); id = netId.first; depth = netId.second;
+      //cerr << "TOP :" << id.id << " : " << depth << endl;
       assert (validNetId(id)); assert (!existVerifyData(id, depth));
       type = _ntk->getGateType(id); assert (type < V3_XD);
       if (V3_PIO >= type) add_PI_Formula(id, depth);
       else if (V3_FF == type) {
-         //cout << "FF" << " ";
          if (depth) {
             netId.first = _ntk->getInputNetId(id, 0); --netId.second;
             if (!existVerifyData(netId.first, netId.second)) { netIdList.push(netId); continue; }
          }
          else {
-            if(!_tem){
+/*            if(!_tem){
 
             }
-            else{
-               netId.first = _ntk->getInputNetId(id, 1);
-               if (id.id != netId.first.id && !existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
-            }
+            else{*/
+            netId.first = _ntk->getInputNetId(id, 1);
+            if (id.id != netId.first.id && !existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
+/*            }*/
          }
+         //cout << "FF" << " ";
          add_FF_Formula(id, depth);
       }
       else if (AIG_FALSE >= type) {

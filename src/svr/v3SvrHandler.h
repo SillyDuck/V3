@@ -10,6 +10,7 @@
 #define V3_SVR_HANDLER_H
 
 #include "v3SvrMiniSat.h"
+#include "v3sSvrMiniSat.h"
 #include "v3SvrBoolector.h"
 
 // Solver Type Enumerations
@@ -17,12 +18,13 @@ enum V3SolverType
 {
    V3_SVR_MINISAT    = 0,
    V3_SVR_BOOLECTOR  = 1,
-   V3_SVR_TOTAL      = 2
+   V3S_SVR_MINISAT   = 2,
+   V3_SVR_TOTAL      = 3
 };
 
 const string V3SolverTypeStr[] = 
 {
-   "MINISAT", "BOOLECTOR"
+   "MINISAT", "BOOLECTOR" , "SMINISAT"
 };
 
 // Solver Creation Functions

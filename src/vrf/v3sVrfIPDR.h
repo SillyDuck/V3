@@ -162,6 +162,7 @@ class V3SVrfIPDR : public V3VrfBase
       V3Stat*           _totalStat;       // Total Statistic (Should be Called Only Once)
       V3Stat*           _initSvrStat;     // CNF Computation
       V3Stat*           _solveStat;       // SAT Solving
+      V3Stat*           _BMCStat;         // SAT Solving
       V3Stat*           _generalStat;     // UNSAT Generalization
       V3Stat*           _propagateStat;   // Propagation
       V3Stat*           _ternaryStat;     // SAT Generalization

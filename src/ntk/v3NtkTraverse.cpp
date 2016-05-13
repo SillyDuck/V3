@@ -295,8 +295,10 @@ const uint32_t dfsNtkForGeneralOrder(V3Ntk* const ntk, V3NetVec& orderMap, const
       dfsGeneralOrder(ntk, ntk->getInputNetId(ntk->getInout(i), 0), m, orderMap);
    if (targetNets.size())
       for (uint32_t i = 0; i < targetNets.size(); ++i) dfsGeneralOrder(ntk, targetNets[i], m, orderMap);
-   else
+   else{
       for (uint32_t i = 0; i < ntk->getOutputSize(); ++i) dfsGeneralOrder(ntk, ntk->getOutput(i), m, orderMap);
+      //for (uint32_t i = 0; i < ntk->getOutputSize(); ++i) dfsGeneralOrder(ntk, ntk->getLatch(i), m, orderMap);
+   }
    // Put Nets Not in COI into orderMap
    if (allNets)
       for (V3NetId id = V3NetId::makeNetId(0); id.id < ntk->getNetSize(); ++id.id)

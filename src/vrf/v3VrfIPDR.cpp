@@ -291,6 +291,7 @@ vrfRestart:
    }
 
    // Start PDR Based Verification
+   //printNetlist(_vrfNtk);
    V3IPDRCube* badCube = 0;
    while (true) {
       // Check Time Bounds
@@ -310,6 +311,11 @@ vrfRestart:
       }
       // Find a Bad Cube as Initial Proof Obligation
       badCube = getInitialObligation();  // SAT(R ^ T ^ !p)
+      if(!badCube)cout << "the Cube is NULL\n";
+      if(badCube){
+         cout << "the Cube is NOT NULL\n";
+         printState(badCube->getState());
+      }
       if (!badCube) {
          if (!isIncKeepSilent() && intactON()) {
             if (!endLineON()) Msg(MSG_IFO) << "\r" + flushSpace + "\r";
@@ -433,7 +439,7 @@ vrfRestart:
 // PDR Initialization Functions
 void
 V3VrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
-   cout << "depth: " << d << endl;
+   cout << "initializeSolver depth: " << d << endl;
    if (profileON()) _initSvrStat->start();
    const bool isNewSolver = (d >= _pdrSvr.size());
    if (d < _pdrSvr.size()) {  // Recycle Solver
@@ -525,13 +531,18 @@ V3VrfIPDR::recycleSolver(const uint32_t& d) {
 V3IPDRCube* const
 V3VrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
    const uint32_t d = getPDRDepth(); _pdrSvr[d]->assumeRelease(); assert (_pdrBad);
+   cout << "getInitialObligation depth : " << d << endl;
    const V3NetVec& state = _pdrBad->getState(); assert (1 == state.size());
    _pdrSvr[d]->assumeProperty(state[0], false, 0);
+   _pdrSvr[d]->printVerbose();
+   //_pdrSvr[d]->printInfo();
    if (profileON()) _solveStat->start();
    _pdrSvr[d]->simplify();
    const bool result = _pdrSvr[d]->assump_solve();
    if (profileON()) _solveStat->end();
+
    if (!result) return 0;
+
    V3IPDRCube* const cube = extractModel(d, _pdrBad);
    assert (cube); return cube;
 }
@@ -584,7 +595,6 @@ V3VrfIPDR::recursiveBlockCube(V3IPDRCube* const badCube) {
                   badQueue.add(baseCube.first + 1, baseCube.second);
                //if ((baseCube.first < getPDRDepth()) && (generalizedCube.first < getPDRDepth()))
                //   badQueue.add(generalizedCube.first + 1, baseCube.second);
-               cout << isForwardSATGen() ;
                if (!isForwardSATGen() || getPDRDepth() <= generalizedCube.first) break;
                baseCube.second = forwardModel(generalizedCube.second); if (!baseCube.second) break;
                baseCube.first = baseCube.first + 1; satGen = false;
