@@ -13,6 +13,7 @@
 #include "v3SvrType.h"
 #include "v3VrfBase.h"
 #include "v3AlgGeneralize.h"
+#include "v3NtkTemDecomp.h"
 
 // Forward Declaration
 class V3SIPDRCube;
@@ -103,7 +104,7 @@ class V3SVrfIPDR : public V3VrfBase
 
       bool    sim_then_add_cube;
       bool    tem_decomp;
-   private : 
+   //private : 
       // Private Attribute Setting Functions
       //inline const bool isForwardSATGen()   const { return _pdrAttr & 1ul; }
       //inline const bool isForwardUNSATGen() const { return _pdrAttr & 2ul; }
@@ -141,6 +142,11 @@ class V3SVrfIPDR : public V3VrfBase
       inline const uint32_t getPDRFrame() const { return _pdrFrame.size(); }
       const bool reportUnsupportedInitialState();
       // PDR Debug Functions
+      void checkCubeSorted(const V3NetVec& state) const {
+         for (unsigned i = 0, s = state.size()-1; i < s; ++i){
+               if(state[i].id >= state[i+1].id) assert(0);
+            }
+      };
       void printState(const V3NetVec&) const;
       // Private Data Members
       V3SIPDRFrameVec    _pdrFrame;        // List of Frames (Ri) in Incremental PDR
@@ -153,7 +159,7 @@ class V3SVrfIPDR : public V3VrfBase
       V3AlgSimulate*    _pdrSim;          // Simulation Handler
       V3AlgGeneralize*  _pdrGen;          // Generalization Handler
       // Private Tables
-      V3BoolVec         _pdrInitConst;    // Initial State of a State Variable (whether it is a const)
+      //V3BoolVec         _pdrInitConst;    // Initial State of a State Variable (whether it is a const)
       V3BoolVec         _pdrInitValue;    // Initial State of a State Variable (value of the const)
       // Extended Data Members
       V3SvrData         _pdrSvrData;      // Solver Data of the Latest Activation Variable
@@ -166,9 +172,10 @@ class V3SVrfIPDR : public V3VrfBase
       V3Stat*           _generalStat;     // UNSAT Generalization
       V3Stat*           _propagateStat;   // Propagation
       V3Stat*           _ternaryStat;     // SAT Generalization
-
+      uint32_t          _decompDepth;      // Decomposition Depth
       // Data Members for Temporal Decompostition
       V3SIPDRFrameVec   _temFrames;
+      V3NtkTemDecomp*    _finalNtk;
 };
 
 // Inline Function Implementations of Cube Setting Functions

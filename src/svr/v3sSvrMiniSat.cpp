@@ -138,12 +138,12 @@ V3SSvrMiniSat::assertImplyUnion(const V3SvrDataVec& vars) {
       assert (*it); lits.push(mkLit(getOriVar(*it), isNegFormula(*it)));
    }
    _Solver->addClause(lits); lits.clear();
-   //cerr << "assertImplyUnion " << endl;
+   ////cerr << "assertImplyUnion " << endl;
 }
 
 const size_t
 V3SSvrMiniSat::setTargetValue(const V3NetId& id, const V3BitVecX& value, const uint32_t& depth, const size_t& prev) {
-   //cerr << "setTargetValue" << endl;
+   ////cerr << "setTargetValue" << endl;
    // Construct formula y = b0 & b1' & b3 & ... & bn', and return variable y
    assert (!prev || !isNegFormula(prev));  // Constrain input prev variable should NOT be negative!
    uint32_t i, size = value.size(); assert (size == _ntk->getNetWidth(id));
@@ -178,7 +178,7 @@ V3SSvrMiniSat::setTargetValue(const V3NetId& id, const V3BitVecX& value, const u
 
 const size_t
 V3SSvrMiniSat::setImplyUnion(const V3SvrDataVec& vars) {
-   //cerr << "setImplyUnion" << endl;
+   ////cerr << "setImplyUnion" << endl;
    // Construct a CNF formula (y' + var1 + var2 + ... + varn), and return variable y
    if (vars.size() == 0) return 0; vec<Lit> lits; lits.clear();
    Lit lit = mkLit(newVar(1), true); lits.push(lit);
@@ -192,7 +192,7 @@ V3SSvrMiniSat::setImplyUnion(const V3SvrDataVec& vars) {
 
 const size_t
 V3SSvrMiniSat::setImplyIntersection(const V3SvrDataVec& vars) {
-   //cerr << "setImplyIntersection" << endl;
+   ////cerr << "setImplyIntersection" << endl;
    // Goal : y --> (var1 && var2 && ... && varn)
    // Construct CNF formulas (y' + var1) && (y' + var2) &&  ... (y' + varn), and return variable y
    if (vars.size() == 0) return 0;
@@ -209,7 +209,7 @@ V3SSvrMiniSat::setImplyIntersection(const V3SvrDataVec& vars) {
 
 const size_t
 V3SSvrMiniSat::setImplyInit() {
-   //cerr << "setImplyInit" << endl;
+   ////cerr << "setImplyInit" << endl;
    Lit lit = mkLit(newVar(1), true);
    vec<Lit> lits; lits.clear();
    for (uint32_t i = 0; i < _init.size(); ++i) {
@@ -250,7 +250,7 @@ V3SSvrMiniSat::getDataConflict(V3SvrDataVec& vars) const {
 
 const size_t
 V3SSvrMiniSat::getFormula(const V3NetId& id, const uint32_t& depth) {
-   Var var = getVerifyData(id, depth); assert (var);
+   Var var = getVerifyData(id, depth); //assert (var);
    assert (!isNegFormula(getPosVar(var)));
    return (isV3NetInverted(id) ? getNegVar(var) : getPosVar(var));
 }
@@ -316,12 +316,13 @@ void
 V3SSvrMiniSat::add_FF_Formula(const V3NetId& out, const uint32_t& depth) {
    //cerr << "add_FF_Formula : " << out.id << " : " << depth << endl;
    // Check Output Validation
-   assert (validNetId(out)); assert (V3_FF == _ntk->getGateType(out)); assert (!getVerifyData(out, depth));
-   const uint32_t index = out.id; assert (depth == _ntkData[index].size());
+   assert (validNetId(out)); assert (V3_FF == _ntk->getGateType(out));
+   assert (!getVerifyData(out, depth));
+   assert (depth == _ntkData[out.id].size());
    const uint32_t width = _ntk->getNetWidth(out); assert (width == 1);
    if (_freeBound) {
       // Set SATVar
-      _ntkData[index].push_back(newVar(width));
+      _ntkData[out.id].push_back(newVar(width));
    }
    else if (depth) {
       // Build FF I/O Relation
@@ -329,15 +330,15 @@ V3SSvrMiniSat::add_FF_Formula(const V3NetId& out, const uint32_t& depth) {
       const Var var1 = getVerifyData(in1, depth - 1); assert (var1);
       // Set SATVar
       if (in1.cp) {
-         _ntkData[index].push_back(newVar(width));
-         buf(_Solver, mkLit(_ntkData[index].back()), mkLit(var1, true));
+         _ntkData[out.id].push_back(newVar(width));
+         buf(_Solver, mkLit(_ntkData[out.id].back()), mkLit(var1, true));
       }
-      else _ntkData[index].push_back(var1);
+      else _ntkData[out.id].push_back(var1);
    }
    else {
       // Set SATVar
-      _ntkData[index].push_back(newVar(width));
-      const Var& var = _ntkData[index].back();
+      _ntkData[out.id].push_back(newVar(width));
+      const Var& var = _ntkData[out.id].back();
       // Build FF Initial State
       const V3NetId in1 = _ntk->getInputNetId(out, 1); assert (validNetId(in1));
       if (AIG_FALSE == _ntk->getGateType(in1)) {

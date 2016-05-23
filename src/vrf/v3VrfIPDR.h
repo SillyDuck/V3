@@ -138,6 +138,11 @@ class V3VrfIPDR : public V3VrfBase
       inline const uint32_t getPDRFrame() const { return _pdrFrame.size(); }
       const bool reportUnsupportedInitialState();
       // PDR Debug Functions
+      void checkCubeSorted(const V3NetVec& state) const {
+         for (unsigned i = 0, s = state.size()-1; i < s; ++i){
+               if(state[i].id >= state[i+1].id) assert(0);
+            }
+      };
       void printState(const V3NetVec&) const;
       // Private Data Members
       V3IPDRFrameVec    _pdrFrame;        // List of Frames (Ri) in Incremental PDR

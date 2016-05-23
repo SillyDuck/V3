@@ -13,10 +13,8 @@
 #include "v3NtkUtil.h"
 #include "v3StrUtil.h"
 #include "v3NtkTemDecomp.h"
+/*
 
-/* -------------------------------------------------- *\
- * Class V3NtkTemDecomp Implementations
-\* -------------------------------------------------- */
 // Constructor and Destructor
 V3NtkTemDecomp::V3NtkTemDecomp(V3NtkHandler* const p, const uint32_t& cycle, V3BitVecX & data, bool first)
    : V3NtkHandler(p, createV3Ntk(dynamic_cast<V3BvNtk*>(p->getNtk()))), _cycle(cycle) {
@@ -141,12 +139,7 @@ V3NtkTemDecomp::performNtkTransformation(V3BitVecX & data, bool first) {
    assert(!isBvNtk);
 
    if(!first){
-      /*cout << "data size:" << data.size() << endl;
-      cout << "data:";
-      for (unsigned i = 0; i < data.size(); ++i){
-          cout << data[i];
-      }
-      cout << endl;*/
+      
       _p2cMap = V3NetTable(1, V3NetVec(parentNets, V3NetUD));
 
       _p2cMap[0][0] = V3NetId::makeNetId(0);
@@ -213,18 +206,12 @@ V3NtkTemDecomp::performNtkTransformation(V3BitVecX & data, bool first) {
                inputs.push_back(V3NetId::makeNetId(p2cMap[id.id].id, p2cMap[id.id].cp ^ id.cp));
 
             id = ntk->getInputNetId(orderMap[i], 1);
-            /*cerr << "QAQ? input2: " << id.id << endl;
-            cout << "type : " << V3GateTypeStr[ntk->getGateType(id)] << endl;*/
+
             if(ntk->getGateType(id) == V3_FF){
                for(uint32_t ii = 0; ii < ntk->getLatchSize(); ii++){
-                  /*cout << "id.id: " << id.id << " and " << ii << " : " << ntk->getLatch(ii).id << endl;
-                  cout << "id == ntk->getLatch(ii)" << (id == ntk->getLatch(ii)) << endl;*/
                   if(id.id == ntk->getLatch(ii).id){
                      //cout << "yes, ii = " << ii << endl;
                      if(data[ii] == '0'){
-                        /*cerr << "id.id: " << id.id << endl;
-                        cerr << "id.cp " << id.cp << endl;
-                        cerr << "p2cMap[id.id].cp " << p2cMap[id.id].cp << endl;*/
                         p2cMap[id.id] = V3NetId::makeNetId(0,p2cMap[id.id].cp ^ id.cp);
                         inputs.push_back(p2cMap[id.id]);
                      }
@@ -444,10 +431,6 @@ V3NtkTemDecomp::performNtkTransformation(V3BitVecX & data, bool first) {
       _c2pMap = V3NetVec(_ntk->getNetSize(), V3NetUD); _c2pMap[0] = V3NetId::makeNetId(0);
       for (uint32_t cycle = 0; cycle < _cycle; ++cycle) {
          V3NetVec& p2cMap = _p2cMap[cycle];
-         /*for (uint32_t i = 0; i < p2cMap.size(); ++i) {
-            cout << (p2cMap[i].cp ? "~": "") <<p2cMap[i].id << " ";
-         }
-         cout << endl;*/
          assert (_c2pMap[0] == p2cMap[0]);
          for (uint32_t i = 0; i < p2cMap.size(); ++i) {
             if (V3NetUD == p2cMap[i] || V3NetUD != _c2pMap[p2cMap[i].id]) continue;
@@ -456,6 +439,6 @@ V3NtkTemDecomp::performNtkTransformation(V3BitVecX & data, bool first) {
       }
    }
 }
-
+*/
 #endif
 

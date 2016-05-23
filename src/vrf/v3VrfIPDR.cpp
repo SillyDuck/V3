@@ -385,6 +385,8 @@ vrfRestart:
    if (V3NtkUD != fired) {  // Record Counter-Example
       // Compute PatternCount
       const V3IPDRCube* traceCube = badCube; assert (traceCube); assert (existInitial(traceCube->getState()));
+      cout << "cex : ";
+      printState(traceCube->getState());
       uint32_t patternCount = 0; while (_pdrBad != traceCube) { traceCube = traceCube->getNextCube(); ++patternCount; }
       V3CexTrace* const cex = new V3CexTrace(patternCount); assert (cex);
       _result[p].setCexTrace(cex); assert (_result[p].isCex());
@@ -725,6 +727,7 @@ V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, c
    cout << "\ncheckReachability frame : " << frame << " cube : ";
    printState(cubeState);
    cout << endl;
+   //checkCubeSorted(cubeState);
    const uint32_t& d = frame - 1; assert (d < _pdrActCount.size());
    if (!_pdrActCount[d]) recycleSolver(d); _pdrSvr[d]->assumeRelease();
    // Assume cube'
@@ -935,7 +938,7 @@ V3VrfIPDR::removeFromProof(V3IPDRTimedCube& timedCube) {
    for (uint32_t i = 0; i < state.size(); ++i) {
       if (coreProofVarSet.end() != coreProofVarSet.find(
             _pdrSvr[timedCube.first - 1]->getFormula(_vrfNtk->getLatch(state[i].id), 1))) {
-         newState.push_back(state[i]);
+         newState.push_back(state[i]); //OrzOrz
          if (!conflictInitial && (_pdrInitConst[state[i].id] && (_pdrInitValue[state[i].id] ^ state[i].cp))) {
             assert (!existInitial(newState)); conflictInitial = true;
          }
@@ -950,7 +953,7 @@ V3VrfIPDR::removeFromProof(V3IPDRTimedCube& timedCube) {
    if (!conflictInitial && V3NetUD != conflictId) { newState.insert(newState.begin() + pos, conflictId); }
    else if( !conflictInitial ) cerr << "GGGG in removing UNSATCore" << endl;
    if (newState.size() < state.size()) timedCube.second->setState(newState);
-
+   //checkCubeSorted(newState);
    assert (!existInitial(timedCube.second->getState()));
    assert (!checkReachability(timedCube.first, timedCube.second->getState())); return isSvrDataInvolved;
 }
@@ -973,7 +976,7 @@ V3VrfIPDR::generalizeProof(V3IPDRTimedCube& timedCube) {
       if (state.size() != (1 + it->second)) state[it->second] = state.back();
       state.pop_back();
       if (existInitial(state) || checkReachability(timedCube.first, state)) {
-         if (state.size() == it->second) state.push_back(id);
+         if (state.size() == it->second) state.push_back(id); //OrzOrz
          else { state.push_back(state[it->second]); state[it->second] = id; }
          assert (state.size() >= (1 + it->second));
       }
@@ -990,6 +993,7 @@ V3VrfIPDR::generalizeProof(V3IPDRTimedCube& timedCube) {
       assert (!existInitial(state)); assert (!checkReachability(timedCube.first, state));
    }
    if (state.size() < cube->getState().size()) cube->setState(state);
+   //checkCubeSorted(state);
    assert (!existInitial(timedCube.second->getState()));
    assert (!checkReachability(timedCube.first, timedCube.second->getState())); 
 }
@@ -1089,8 +1093,10 @@ V3VrfIPDR::reportUnsupportedInitialState() {
 // PDR Debug Functions
 void
 V3VrfIPDR::printState(const V3NetVec& state) const {
+   cerr << "printState : ";
    for (uint32_t i = 0; i < state.size(); ++i)
-      Msg(MSG_IFO) << (state[i].cp ? "~" : "") << state[i].id << " ";
+      cerr << (state[i].cp ? "~" : "") << state[i].id << " ";
+   cerr << endl;
 }
 
 #endif

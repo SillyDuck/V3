@@ -37,6 +37,7 @@ class V3NtkTemDecomp : public V3NtkHandler
       const uint32_t _cycle;     // Number of Cycles for Expansion
       V3NetVec       _c2pMap;    // V3NetId Mapping From Current to Parent Ntk
       V3NetTable     _p2cMap;    // V3NetId Mapping From Parent to Current Ntk
+      V3NetTable     _latchMap;
 };
 
 #endif

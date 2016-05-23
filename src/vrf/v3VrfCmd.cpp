@@ -1037,13 +1037,16 @@ V3PDRVrfCmd::exec(const string& option) {
    bool maxD = false, maxDON = false, recycle = false, recycleON = false, simp = false;
    bool frr = false, temdec = false;
    bool incremental = false, fwdSATGen = false, fwdUNSATGen = false;
-   uint32_t maxDepth = 0, recycleCount = 0;
+   uint32_t maxDepth = 0, recycleCount = 0, temDepth = 0;
    string propertyName = "";
    
    size_t n = options.size();
    for (size_t i = 0; i < n; ++i) {
       const string& token = options[i];
-      if (v3StrNCmp("-Max-depth", token, 2) == 0) {
+      if (v3StrNCmp("-Tem-depth", token, 2) == 0) {
+         temdec = true;
+      }
+      else if (v3StrNCmp("-Max-depth", token, 2) == 0) {
          if (maxD) return V3CmdExec::errorOption(CMD_OPT_EXTRA, token);
          else if (recycleON) return V3CmdExec::errorOption(CMD_OPT_MISSING, "(unsigned MaxCount)");
          else maxD = maxDON = true;
@@ -1079,15 +1082,16 @@ V3PDRVrfCmd::exec(const string& option) {
          cout << "Turned On Foward Reachability Restriction\n";
          frr = true;
       }
-      else if (v3StrNCmp("-TEMDEC", token, 2) == 0) {
+      /*else if (v3StrNCmp("-TEMDEC", token, 2) == 0) {
          cout << "Turned On Temporal Decompostition\n";
          temdec = true;
-      }
-      else if (maxDON || recycleON) {
+      }*/
+      else if (maxDON || recycleON || temdec) {
          int temp; if (!v3Str2Int(token, temp)) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
          if (temp <= 0) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
          if (maxDON) { maxDepth = (uint32_t)temp; assert (maxDepth); maxDON = false; }
-         else { recycleCount = (uint32_t)temp; assert (recycleCount); recycleON = false; }
+         else if (recycleON) { recycleCount = (uint32_t)temp; assert (recycleCount); recycleON = false; }
+         else { temDepth = (uint32_t)temp; assert (recycleCount);}
       }
       else if (propertyName == "") propertyName = token;
       else return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
@@ -1111,7 +1115,9 @@ V3PDRVrfCmd::exec(const string& option) {
                V3SVrfIPDR* const checker = new V3SVrfIPDR(pNtk); assert (checker);
                if (maxD) checker->setMaxDepth(maxDepth);
                if (frr) checker->sim_then_add_cube = true;
-               if (temdec) checker->tem_decomp = true;
+               if (temdec){ checker->tem_decomp = true;
+                  checker->_decompDepth = temDepth;
+               }
                checker->verifyInOrder();
                if (checker->getResult(0).isCex() || checker->getResult(0).isInv())
                   property->setResult(checker->getResult(0));

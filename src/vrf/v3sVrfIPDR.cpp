@@ -17,12 +17,14 @@
 #include "v3NtkTemDecomp.h"
 #include "v3NtkExpand.h"
 #include "v3NtkSimplify.h"
-
+#include <algorithm>
 #include <iomanip>
+#include "v3NtkWriter.h"
 
 //#define V3_IPDR_USE_PROPAGATE_BACKWARD
 #define V3S_IPDR_USE_PROPAGATE_LOW_COST
 
+bool V3NetIdCompare (const V3NetId& i, const V3NetId j) { return (i.id<j.id); }
 /* -------------------------------------------------- *\
  * Class V3SIPDRFrame Implementations
 \* -------------------------------------------------- */
@@ -149,8 +151,7 @@ V3SVrfIPDR::V3SVrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
    // Private Engines
    _pdrSvr.clear(); _pdrSim = 0; _pdrGen = 0;
    // Private Tables
-   _pdrInitConst.clear(); _pdrInitValue.clear();
-   _temFrames.clear();
+   _pdrInitValue.clear(); _temFrames.clear();
    // Extended Data Members
    _pdrPriority.clear();
    // Statistics
@@ -174,7 +175,7 @@ V3SVrfIPDR::~V3SVrfIPDR() {
    for (uint32_t i = 0; i < _pdrSvr.size(); ++i) delete _pdrSvr[i];
    _pdrSvr.clear(); if (_pdrGen) delete _pdrGen; _pdrGen = 0;
    // Private Tables
-   _pdrInitConst.clear(); _pdrInitValue.clear();
+   _pdrInitValue.clear();
    // Extended Data Members
    _pdrPriority.clear();
    // Statistics
@@ -201,16 +202,9 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    // Clear Verification Results
    clearResult(p); if (profileON()) _totalStat->start();
    // Consistency Check
-   consistencyCheck(); assert (!_constr.size());
-   if (!reportUnsupportedInitialState()) return;                           
+   assert (!_constr.size());
+
    _tem = true;
-
-   //V3Ntk* simpNtk = 0;
-   //V3NetId id; V3NetVec p2cMap, c2pMap; V3RepIdHash repIdHash; repIdHash.clear();
-   //msimpNtk = duplicateNtk(pNtk, p2cMap, c2pMap); assert (simpNtk);
-
-   //
-
 
    uint32_t simDepth = 30;
    V3AlgAigSimulate* _temSim = new V3AlgAigSimulate(_handler);
@@ -226,8 +220,6 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       value.setX(0);
       assert(_vrfNtk->getInoutSize() == 0);
       for (uint32_t j = 0; j < simDepth; ++j) {
-         //do { getline(input, valueStr); assert (!input.eof()); } while (!valueStr.size());
-         //assert (patternSize == valueStr.size());
          V3BitVecX v_dff(_vrfNtk->getLatchSize());
          _temSim->updateNextStateValue();
          for (uint32_t i = 0; i < _vrfNtk->getInputSize(); ++i) {
@@ -247,76 +239,69 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       }
       //cout << endl;
    }
-
-   uint32_t decompDepth = 3;
-   cout << "decompDepth : " << decompDepth << endl;
+   //_decompDepth = first + 2;
+   _decompDepth = 3;
+   cout << "decompDepth : " << _decompDepth << endl;
    V3BitVecX transient_signals(_vrfNtk->getLatchSize());
-
-/*   for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
-      if(history[first][i] == '0'){
-         bool aaa = true;
-         for (unsigned k = first; k < simDepth; ++k){
-             aaa &= (history[k][i] == '0');
+   //if(first != -2 ){
+   if(false){
+      for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
+         if(history[first][i] == '0'){
+            bool aaa = true;
+            for (unsigned k = first; k < simDepth; ++k){
+                aaa &= (history[k][i] == '0');
+            }
+            if(aaa)
+               transient_signals.set0(i);
          }
-         if(aaa)
-            transient_signals.set0(i);
-      }
-      else if(history[first][i] == '1'){
-         bool aaa = true;
-         for (unsigned k = first; k < simDepth; ++k){
-             aaa &= (history[k][i] == '1');
+         else if(history[first][i] == '1'){
+            bool aaa = true;
+            for (unsigned k = first; k < simDepth; ++k){
+                aaa &= (history[k][i] == '1');
+            }
+            if(aaa)
+               transient_signals.set1(i);
          }
-         if(aaa)
-            transient_signals.set1(i);
       }
    }
 
-*/
+
    // set FFs to be constant
    //printNetlist(_handler->_ntk);
+   cerr << "Original Circuit Latch Size : " << _vrfNtk->getLatchSize() << endl;
    V3NtkTemDecomp* const pNtk = new V3NtkTemDecomp(_handler, 1 , transient_signals , false); assert (pNtk);
    _handler->_ntk = pNtk->getNtk();
    V3NtkHandler::setStrash(true);
    V3NtkHandler::setReduce(true);
    V3NtkHandler::setRewrite(true);
-   /*_handler->setStrash(true);
-   _handler->setReduce(true);
-   _handler->setRewrite(true);*/
+   //printNetlist(pNtk->getNtk());
    // Simplify them
    V3NtkSimplify* const pNtk2 = new V3NtkSimplify(_handler);
-   //printNetlist(pNtk->getNtk());
-   //printNetlist(pNtk2->getNtk());
-
+   printNetlist(pNtk2->getNtk());
+   //V3NtkHandler* newHandler = new V3NtkHandler(_handler,pNtk2->getNtk());
    cout << pNtk2->getNtk()->getOutput(0).id << endl;
    _handler->_ntk = pNtk2->getNtk();
+   _vrfNtk = pNtk2->getNtk();
+   cerr << "Simplified Circuit Latch Size : " << _vrfNtk->getLatchSize() << endl;
+   if (!reportUnsupportedInitialState()) return;
+   string gg = "before.ntk";
+   V3PlotNtkByLevel(_handler, gg.c_str(), 20, outputNets, false);
+
 
    // prolong the circuit
-   V3NtkTemDecomp* const pNtk3 = new V3NtkTemDecomp(_handler, decompDepth, transient_signals , true); assert (pNtk);
-   //V3NtkExpand* const pNtk2 = new V3NtkExpand(_handler, decompDepth);
-   //printNetlist(pNtk3->getNtk());
+   _finalNtk = new V3NtkTemDecomp(_handler, _decompDepth, transient_signals , true); assert (pNtk);
+   printNetlist(_finalNtk->getNtk());
+   V3NtkHandler* newHandler = new V3NtkHandler(_handler,_finalNtk->getNtk());
+   _vrfNtk = _finalNtk->getNtk();
+   gg = "after.ntk";
+   V3PlotNtkByLevel(newHandler, gg.c_str(), 20, outputNets, false);
 
-   /*V3NtkSimplify* const pNtk4 = new V3NtkSimplify(_handler);
-   printNetlist(pNtk4->getNtk());
-   _handler->_ntk = pNtk4->getNtk();*/
-
-   //printNetlist(pNtk->getNtk());
-   ///V3NetId id = pNtk->getNtk()->getLatch(0);
-   //V3RepIdHash repIdHash; repIdHash.clear();
-   //cout << "id.id : " << id.id << endl;
-   //repIdHash.insert(make_pair(id.id, V3NetId::makeNetId(0, id.cp)));
-   //if (repIdHash.size()) pNtk->getNtk()->replaceFanin(repIdHash);
-
-   V3NtkHandler* newHandler = new V3NtkHandler(_handler,pNtk3->getNtk());
-   //cout << _vrfNtk->getOutputSize() << endl;
-   //cout << pNtk->getNtk()->getOutputSize() << endl;
-   _vrfNtk = pNtk3->getNtk();
 
    _pdrGen = new V3AlgAigGeneralize(newHandler); assert (_pdrGen);
    _pdrSim = dynamic_cast<V3AlgAigSimulate*>(_pdrGen); assert (_pdrSim);
 
+
    V3NetVec simTargets(1, _vrfNtk->getOutput(p)); _pdrSim->reset(simTargets);
-
-
    // Initialize Pattern Input Size
    assert (p < _result.size()); assert (p < _vrfNtk->getOutputSize());
    const V3NetId& pId = _vrfNtk->getOutput(p); assert (V3NetUD != pId);
@@ -345,37 +330,41 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    assert (_pdrSvr.size() == 1); assert (_pdrSvr.back());
    if (_vrfNtk->getLatchSize()) _pdrSvr.back()->assertInit();  // R0 = I0
 
+   cerr <<"Solver initialized\nNow Simulating and adding TemFrames\n";
    uint32_t count1 = 0;
    uint32_t count2 = 0;
-   for (uint32_t j = 0; j < simDepth; ++j) {
-      for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
-         V3SIPDRCube* tmpCube = new V3SIPDRCube(0);
-         V3NetVec tmpVec;
-         if(history[j][i] == '0'){
-            bool aaa = true;
-            for (unsigned k = 0; k < j; ++k){
-                aaa &= (history[k][i] == '0');
-            }
-            tmpVec.push_back(V3NetId::makeNetId(i,0));
-            if( aaa && !existInitial(tmpVec) ){ // the cube should be extract later
-               tmpCube->setState(tmpVec);
+   if(sim_then_add_cube) {
+      for (uint32_t j = 0; j < simDepth; ++j) {
+         for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
+            V3SIPDRCube* tmpCube = new V3SIPDRCube(0);
+            V3NetVec tmpVec;
+            if(history[j][i] == '0'){
+               bool aaa = true;
+               for (unsigned k = 0; k < j; ++k){
+                   aaa &= (history[k][i] == '0');
+               }
+               tmpVec.push_back(V3NetId::makeNetId(i,0));
+               if( aaa && !existInitial(tmpVec) ){ // the cube should be extract later
+                  tmpCube->setState(tmpVec);
 
-               _temFrames[j+1]->pushCube( tmpCube );
+                  _temFrames[j+1]->pushCube( tmpCube );
+               }
             }
-         }
-         else if(history[j][i] == '1'){
-            bool aaa = true;
-            for (unsigned k = 0; k < j; ++k){
-                aaa &= (history[k][i] == '1');
-            }
-            tmpVec.push_back(V3NetId::makeNetId(i,1));
-            if( aaa && !existInitial(tmpVec) ){
-               tmpCube->setState(tmpVec);
-               _temFrames[j+1]->pushCube( tmpCube );
+            else if(history[j][i] == '1'){
+               bool aaa = true;
+               for (unsigned k = 0; k < j; ++k){
+                   aaa &= (history[k][i] == '1');
+               }
+               tmpVec.push_back(V3NetId::makeNetId(i,1));
+               if( aaa && !existInitial(tmpVec) ){
+                  tmpCube->setState(tmpVec);
+                  _temFrames[j+1]->pushCube( tmpCube );
+               }
             }
          }
       }
    }
+   cerr <<"Simulation done, Start Verification\n";
    // Start PDR Based Verification
    V3SIPDRCube* badCube = 0;
    while (true) {
@@ -385,9 +374,11 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
 
       // Find a Bad Cube as Initial Proof Obligation
       badCube = getInitialObligation();  // SAT(R ^ T ^ !p)
-      if(!badCube)cout << "the Cube is NULL\n";
-      if(badCube)cout << "the Cube is NOT NULL\n";
-      //printState(badCube->getState());
+      if(!badCube) cerr << "the Cube is NULL\n";
+      if(badCube){
+         cerr << "the Cube is NOT NULL\n";
+         printState(badCube->getState());
+      }
       if (!badCube) {
          if (!isIncKeepSilent() && intactON()) {
             if (!endLineON()) Msg(MSG_IFO) << "\r" + flushSpace + "\r";
@@ -495,7 +486,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    if (V3NtkUD != fired) {  // Record Counter-Example
       // Compute PatternCount
       const V3SIPDRCube* traceCube = badCube; assert (traceCube);
-      cout << "cex:";
+      cout << "cex : ";
       printState(traceCube->getState());
       assert (existInitial(traceCube->getState()));
       uint32_t patternCount = 0; while (_pdrBad != traceCube) { traceCube = traceCube->getNextCube(); ++patternCount; }
@@ -508,7 +499,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
          traceCube = traceCube->getNextCube(); assert (traceCube);
       }
       // Set Initial State Value
-      if (_pdrInitValue.size()) {
+      /*if (_pdrInitValue.size()) {
          V3BitVecX initValue(_pdrInitValue.size());
          for (uint32_t i = 0; i < badCube->getState().size(); ++i) {
             assert (initValue.size() > badCube->getState()[i].id);
@@ -517,8 +508,8 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
          }
          for (uint32_t i = 0; i < _pdrInitValue.size(); ++i)
             if (_pdrInitConst[i]) { if (_pdrInitValue[i]) initValue.set0(i); else initValue.set1(i); }
-         cex->setInit(initValue);
-      }
+         //cex->setInit(initValue);
+      }*/
       // Delete Cubes on the Trace
       const V3SIPDRCube* lastCube; traceCube = badCube;
       while (_pdrBad != traceCube) { lastCube = traceCube->getNextCube(); delete traceCube; traceCube = lastCube; }
@@ -543,7 +534,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
 // PDR Initialization Functions
 void
 V3SVrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
-   cout << "initializeSolver depth: " << d << endl;
+   cerr << "initializeSolver depth: " << d << endl;
    if (profileON()) _initSvrStat->start();
    if(!d){
       _pdrSvr.push_back(allocSolver(getSolver(), _vrfNtk));
@@ -551,8 +542,8 @@ V3SVrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
 
       for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i)
          _pdrSvr[0]->addBoundedVerifyData(_vrfNtk->getLatch(i), 0);
-      for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i)
-         _pdrSvr[0]->addBoundedVerifyData(_vrfNtk->getLatch(i), 1);
+      /*for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i)
+         _pdrSvr[0]->addBoundedVerifyData(_vrfNtk->getLatch(i), 1);*/
       // Set p to this Frame if it is NOT the Last Frame
       _pdrSvr[0]->addBoundedVerifyData(_pdrBad->getState()[0], 0);
       if (0 != getPDRDepth()) _pdrSvr[0]->assertProperty(_pdrBad->getState()[0], true, 0);
@@ -621,7 +612,7 @@ V3SVrfIPDR::recycleSolver(const uint32_t& d) {
 V3SIPDRCube* const
 V3SVrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
    const uint32_t d = getPDRDepth(); _pdrSvr[d]->assumeRelease(); assert (_pdrBad);
-   cout << "getInitialObligation depth : " << d << endl;
+   cerr << "getInitialObligation depth : " << d << endl;
    const V3NetVec& state = _pdrBad->getState(); assert (1 == state.size());
    _pdrSvr[d]->assumeProperty(state[0], false, 0);
    if (profileON()) _solveStat->start();
@@ -635,14 +626,14 @@ V3SVrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
 
 V3SIPDRCube* const
 V3SVrfIPDR::recursiveBlockCube(V3SIPDRCube* const badCube) {
-   cout << "\n\n\nrecursiveBlockCube\n";
+   cerr << "\n\n\nrecursiveBlockCube\n";
    // Create a Queue for Blocking Cubes
    V3BucketList<V3SIPDRCube*> badQueue(getPDRFrame());
    assert (badCube); badQueue.add(getPDRDepth(), badCube);
    // Block Cubes from the Queue
    V3SIPDRTimedCube baseCube, generalizedCube;
    while (badQueue.pop(baseCube.first, baseCube.second)) {
-      cout << "baseCube.second: ";
+      cerr << "baseCube.second: ";
       printState( baseCube.second->getState() );
       assert (baseCube.first < getPDRFrame());
       if (!baseCube.first) {
@@ -686,7 +677,7 @@ V3SVrfIPDR::recursiveBlockCube(V3SIPDRCube* const badCube) {
 
 const bool
 V3SVrfIPDR::propagateCubes() {
-   cout << "\n\n\npropagateCubes\n";
+   cerr << "\n\n\npropagateCubes\n";
    if (profileON()) _propagateStat->start();
    // Check Each Frame if some Cubes can be Further Propagated
    for (uint32_t i = 1; i < getPDRDepth(); ++i) {
@@ -727,9 +718,9 @@ V3SVrfIPDR::propagateCubes() {
 // PDR Auxiliary Functions
 const bool
 V3SVrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, const bool& extend) {
-   cout << "\ncheckReachability frame : " << frame << " cube : ";
+   cerr << "\ncheckReachability frame : " << frame << " cube : ";
    printState(cubeState);
-   cout << endl;
+   cerr << endl;
    assert (frame > 0); assert (frame < getPDRFrame());
    const uint32_t& d = frame - 1;
    _pdrSvr[d]->assumeRelease();
@@ -753,7 +744,7 @@ V3SVrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, 
       const bool result = _pdrSvr[d]->assump_solve();
       if (profileON()) _solveStat->end();
       _pdrSvr[d]->assertProperty(_pdrSvr[d]->getNegFormula(_pdrSvrData));  // Invalidate ~cube in future solving
-      cout << "result: " << result << endl;
+      cerr << "result: " << result << endl;
       return result;
    }
    else {
@@ -761,7 +752,7 @@ V3SVrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, 
       _pdrSvr[d]->simplify();
       const bool result = _pdrSvr[d]->assump_solve();
       if (profileON()) _solveStat->end();
-      cout << "result: " << result << endl;
+      cerr << "result: " << result << endl;
       return result;
    }
 }
@@ -778,9 +769,34 @@ V3SVrfIPDR::isBlocked(const V3SIPDRTimedCube& timedCube) {
 const bool
 V3SVrfIPDR::existInitial(const V3NetVec& cubeState) {
    // checkReachability frame : 0 cube : state
-   
+   //cerr << "\ncheckexistInitial , cube : "; printState(cubeState); 
+   bool tmpBool = true;
+   for (uint32_t i = 0; i < cubeState.size(); ++i) {
+      assert (cubeState[i].id < _pdrInitValue.size());
+      if ((_pdrInitValue[cubeState[i].id] ^ cubeState[i].cp)) tmpBool = false;
+   }
+   if(tmpBool == true) return true;
    // if SAT, return true
    if(true){
+      if(_decompDepth < 3){
+         return false;
+         //cerr << "ERROR in existInitial!\n";
+         //assert(0);
+      }
+      for (unsigned j = 1; j < _decompDepth - 2; ++j){
+         _pdrSvr[0]->assumeRelease();
+         V3NetId tmpId;
+         for (uint32_t i = 0; i < cubeState.size(); ++i){
+            tmpId = _finalNtk->_latchMap[j][cubeState[i].id];
+            //cerr << "existInitial , getting " << _vrfNtk->getLatch(cubeState[i].id).id << " whose tmpId is " << tmpId.id  << ":" << tmpId.cp << endl;
+            _pdrSvr[0]->assumeProperty(_pdrSvr[0]->getFormula(tmpId,0) , tmpId.cp ^ cubeState[i].cp);
+         }
+         if (profileON()) _BMCStat->start();
+         _pdrSvr[0]->simplify();
+         const bool result = _pdrSvr[0]->assump_solve();
+         if (profileON()) _BMCStat->end();
+         if(result == true) return true;
+      }
       _pdrSvr[0]->assumeRelease();
       for (uint32_t i = 0; i < cubeState.size(); ++i)
          _pdrSvr[0]->assumeProperty(_pdrSvr[0]->getFormula(_vrfNtk->getLatch(cubeState[i].id), 0), cubeState[i].cp);
@@ -788,9 +804,9 @@ V3SVrfIPDR::existInitial(const V3NetVec& cubeState) {
       _pdrSvr[0]->simplify();
       const bool result = _pdrSvr[0]->assump_solve();
       if (profileON()) _BMCStat->end();
-      cout << "\ncheckexistInitial , cube : "; printState(cubeState); cout << "  result: " << result << endl;
-      return result;
+      if(result == true) return true;
    }
+   //cerr << "result == false\n";
    return false;
 }
 
@@ -932,31 +948,36 @@ V3SVrfIPDR::removeFromProof(V3SIPDRTimedCube& timedCube) {
    const V3NetVec& state = timedCube.second->getState();
    // Remove Variables to Form New State
    assert (!existInitial(state));
-   bool conflictInitial = false;
-   V3NetId conflictId = V3NetUD;
-   uint32_t pos = 0;
+   //bool conflictInitial = false; V3NetId conflictId = V3NetUD; uint32_t pos = 0;
    V3NetVec newState; newState.reserve(state.size());
+   V3NetVec notCoreState; notCoreState.reserve(state.size());
    for (uint32_t i = 0; i < state.size(); ++i) {
       if (coreProofVarSet.end() != coreProofVarSet.find(
-            _pdrSvr[timedCube.first - 1]->getFormula(_vrfNtk->getLatch(state[i].id), 1))) {
+            _pdrSvr[timedCube.first - 1]->getFormula(_vrfNtk->getLatch(state[i].id), 1)
+         )) {
          newState.push_back(state[i]);
-         if (!conflictInitial && (_pdrInitConst[state[i].id] && (_pdrInitValue[state[i].id] ^ state[i].cp))) {
-            assert (!existInitial(newState)); conflictInitial = true;
-         }
       }
-      else if (!conflictInitial && V3NetUD == conflictId) {
-         if (_pdrInitConst[state[i].id] && (_pdrInitValue[state[i].id] ^ state[i].cp)) {
-            conflictId = state[i]; assert (V3NetUD != conflictId); pos = newState.size();
-         }
+      else{
+         notCoreState.push_back(state[i]);
       }
    }
-   // Resolve Intersection with Initial State
-   if (!conflictInitial && V3NetUD != conflictId) { newState.insert(newState.begin() + pos, conflictId); }
-   else if( !conflictInitial ){ cerr << "GGGG in removing UNSATCore" << endl; assert(0);}
-   if (newState.size() < state.size()) timedCube.second->setState(newState);
 
+   for(uint32_t i = 0; i < notCoreState.size(); ++i){
+      if(existInitial(newState)){
+         newState.push_back(notCoreState[i]);
+         sort(newState.begin(),newState.end(),V3NetIdCompare);
+      }else{
+         cerr << "pushed ... : " << i << endl;
+         break;
+      }
+   }
+   if (newState.size() < state.size()) timedCube.second->setState(newState);
+   checkCubeSorted(newState);
    assert (!existInitial(timedCube.second->getState()));
-   assert (!checkReachability(timedCube.first, timedCube.second->getState())); return isSvrDataInvolved;
+   assert (!checkReachability(timedCube.first, timedCube.second->getState()));
+
+   // this return value is not important...
+   return isSvrDataInvolved;
 }
 
 void
@@ -1021,32 +1042,30 @@ V3SVrfIPDR::generalizeCex(V3SIPDRTimedCube& timedCube) {
 // PDR Helper Functions
 const bool
 V3SVrfIPDR::reportUnsupportedInitialState() {
-   _pdrInitConst.clear(); _pdrInitConst.reserve(_vrfNtk->getLatchSize());
-   _pdrInitValue.clear(); _pdrInitValue.reserve(_vrfNtk->getLatchSize());
-   // Currently Not Support Non-Constant Initial State
+
    V3NetId id; V3BitVecX value; bool ok = true;
    const V3AigNtk* const aigNtk = _vrfNtk; assert (aigNtk);
+   //cerr << "reportUnsupportedInitialState, Latch Size: " << aigNtk->getLatchSize() << endl;
    for (uint32_t i = 0; i < aigNtk->getLatchSize(); ++i) {
       id = aigNtk->getInputNetId(aigNtk->getLatch(i), 1);
+      //cerr << "reportUnsupportedInitialState" << id.id << endl;
       if (AIG_FALSE == aigNtk->getGateType(id)) {
-         _pdrInitConst.push_back(1);
          _pdrInitValue.push_back(!id.cp);
-      }
-      else if (aigNtk->getLatch(i) == id) {
-         _pdrInitConst.push_back(0);
-         _pdrInitValue.push_back(0);
+         //cerr << id.cp ;
       }
       else {
          Msg(MSG_WAR) << "DFF " << i << " : " << _handler->getNetName(aigNtk->getLatch(i))
                       << " has Non-Constant Initial Value !!" << endl; ok = false; }
+      //cerr << endl;
    }
-   assert (_pdrInitConst.size() == _pdrInitValue.size());
+
    return ok;
 }
 
 // PDR Debug Functions
 void
 V3SVrfIPDR::printState(const V3NetVec& state) const {
+   cerr << "printState : ";
    for (uint32_t i = 0; i < state.size(); ++i)
       cerr << (state[i].cp ? "~" : "") << state[i].id << " ";
    cerr << endl;
