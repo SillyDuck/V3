@@ -1091,7 +1091,7 @@ V3PDRVrfCmd::exec(const string& option) {
          if (temp <= 0) return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
          if (maxDON) { maxDepth = (uint32_t)temp; assert (maxDepth); maxDON = false; }
          else if (recycleON) { recycleCount = (uint32_t)temp; assert (recycleCount); recycleON = false; }
-         else { temDepth = (uint32_t)temp; assert (recycleCount);}
+         else { temDepth = (uint32_t)temp;}
       }
       else if (propertyName == "") propertyName = token;
       else return V3CmdExec::errorOption(CMD_OPT_ILLEGAL, token);
@@ -1114,8 +1114,8 @@ V3PDRVrfCmd::exec(const string& option) {
             if(simp){
                V3SVrfIPDR* const checker = new V3SVrfIPDR(pNtk); assert (checker);
                if (maxD) checker->setMaxDepth(maxDepth);
-               if (frr) checker->sim_then_add_cube = true;
-               if (temdec){ checker->tem_decomp = true;
+               if (frr) checker->_sim_then_add_cube = true;
+               if (temdec){ checker->_tem_decomp = true;
                   checker->_decompDepth = temDepth;
                }
                checker->verifyInOrder();

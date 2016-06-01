@@ -200,19 +200,12 @@ void dfsMarkFaninConeTem(V3Ntk* const ntk, const V3NetId& pId, V3BoolVec& m) {
    // Traverse Fanin Logics
    V3NetId id; V3GateType type; uint32_t inSize;
    while (s.size()) {
-      id = s.top(); s.pop();// cout << "id:" << id.id << " ";
+      id = s.top(); s.pop(); //cout << "id:" << id.id << " ";
       assert (id.id < m.size()); if (m[id.id]) continue;
       type = ntk->getGateType(id); assert (V3_XD > type); m[id.id] = true;
-      if (V3_MODULE == type) {
-         assert (ntk->getInputNetSize(id) == 1); assert (ntk->getModule(id));
-         const V3NetVec& inputs = ntk->getModule(id)->getInputList();
-         inSize = inputs.size(); while (inSize--) s.push(inputs[inSize]);
-      }
-      else {
-         inSize = ntk->getInputNetSize(id); if (BV_SLICE == type || BV_CONST == type) --inSize;
-         if (V3_FF == type) continue;
-         while (inSize--) s.push(ntk->getInputNetId(id, inSize));
-      }
+      inSize = ntk->getInputNetSize(id);
+      if (V3_FF == type) continue; // ignore the temporal decomposition part circuit
+      while (inSize--) s.push(ntk->getInputNetId(id, inSize));
    }
    //cout << endl;
    m[id.id] = true;

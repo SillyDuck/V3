@@ -24,7 +24,6 @@ V3SolverType    V3VrfBase::_extSolverType       = V3_SVR_TOTAL;
 
 // Constructor and Destructor
 V3VrfBase::V3VrfBase(const V3NtkHandler* const handler) {
-   _tem = false;
    _handler = const_cast<V3NtkHandler*>(handler); assert (_handler);
    _vrfNtk = handler->getNtk(); assert (_vrfNtk); assert (_vrfNtk->getOutputSize());
    // Private Data Members

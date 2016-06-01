@@ -17,7 +17,7 @@
 \* -------------------------------------------------- */
 // Constructor and Destructor
 V3SvrBase::V3SvrBase(const V3Ntk* const ntk, const bool& freeBound) : _ntk(ntk), _freeBound(freeBound) {
-   _solves = 0; _runTime = 0; _tem = false;
+   _solves = 0; _runTime = 0;
 }
 
 V3SvrBase::~V3SvrBase() {
@@ -370,7 +370,6 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
    V3Stack<pair<V3NetId, uint32_t> >::Stack netIdList; assert (!netIdList.size());
    pair<V3NetId, uint32_t> netId = make_pair(id, depth); netIdList.push(netId);
    V3GateType type;
-   //cout << "tem:" << _tem << endl;
    while (!netIdList.empty()) {
       netId = netIdList.top(); id = netId.first; depth = netId.second;
       //cerr << "TOP :" << id.id << " : " << depth << endl;

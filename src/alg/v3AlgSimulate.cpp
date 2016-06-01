@@ -156,7 +156,7 @@ V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
       else cout << "?";
    }
    //if(!verbose) cout << "X ratio: " << x <<"/" << nx;
-   cout <<endl;
+   if(verbose && ntk->getLatchSize() < 80) cout <<endl;
 }
 
 

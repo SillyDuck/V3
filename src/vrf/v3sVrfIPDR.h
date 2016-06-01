@@ -102,8 +102,6 @@ class V3SVrfIPDR : public V3VrfBase
       V3SVrfIPDR(const V3NtkHandler* const);
       ~V3SVrfIPDR();
 
-      bool    sim_then_add_cube;
-      bool    tem_decomp;
    //private : 
       // Private Attribute Setting Functions
       //inline const bool isForwardSATGen()   const { return _pdrAttr & 1ul; }
@@ -175,7 +173,9 @@ class V3SVrfIPDR : public V3VrfBase
       uint32_t          _decompDepth;      // Decomposition Depth
       // Data Members for Temporal Decompostition
       V3SIPDRFrameVec   _temFrames;
-      V3NtkTemDecomp*    _finalNtk;
+      V3NtkTemDecomp*   _finalNtk;
+      bool             _sim_then_add_cube;
+      bool             _tem_decomp;
 };
 
 // Inline Function Implementations of Cube Setting Functions

@@ -311,11 +311,11 @@ vrfRestart:
       }
       // Find a Bad Cube as Initial Proof Obligation
       badCube = getInitialObligation();  // SAT(R ^ T ^ !p)
-      if(!badCube)cout << "the Cube is NULL\n";
+      /*if(!badCube)cout << "the Cube is NULL\n";
       if(badCube){
          cout << "the Cube is NOT NULL\n";
          printState(badCube->getState());
-      }
+      }*/
       if (!badCube) {
          if (!isIncKeepSilent() && intactON()) {
             if (!endLineON()) Msg(MSG_IFO) << "\r" + flushSpace + "\r";
@@ -329,11 +329,9 @@ vrfRestart:
          // Set p to the Last Frame
          _pdrSvr.back()->assertProperty(pId, true, 0);
          // Push New Frame
-         //cout << "PDR BACKUP SIZE " << _pdrBackup.size() << endl;
          if (!_pdrBackup.size()) _pdrFrame.push_back(new V3IPDRFrame());
          else { _pdrFrame.push_back(_pdrBackup.back()); _pdrBackup.pop_back(); }
          if (_pdrSvrBackup.size()) {
-            //cout << "@@\n";
             _pdrSvr.push_back(_pdrSvrBackup.back()); _pdrSvrBackup.pop_back();
             _pdrActCount.push_back(_pdrActBackup.back()); _pdrActBackup.pop_back();
             initializeSolver(getPDRDepth(), true);
@@ -441,7 +439,7 @@ vrfRestart:
 // PDR Initialization Functions
 void
 V3VrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
-   cout << "initializeSolver depth: " << d << endl;
+   //cout << "initializeSolver depth: " << d << endl;
    if (profileON()) _initSvrStat->start();
    const bool isNewSolver = (d >= _pdrSvr.size());
    if (d < _pdrSvr.size()) {  // Recycle Solver
@@ -533,7 +531,7 @@ V3VrfIPDR::recycleSolver(const uint32_t& d) {
 V3IPDRCube* const
 V3VrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
    const uint32_t d = getPDRDepth(); _pdrSvr[d]->assumeRelease(); assert (_pdrBad);
-   cout << "getInitialObligation depth : " << d << endl;
+   //cout << "getInitialObligation depth : " << d << endl;
    const V3NetVec& state = _pdrBad->getState(); assert (1 == state.size());
    _pdrSvr[d]->assumeProperty(state[0], false, 0);
    _pdrSvr[d]->printVerbose();
@@ -551,13 +549,15 @@ V3VrfIPDR::getInitialObligation() {  // If SAT(R ^ T ^ !p)
 
 V3IPDRCube* const
 V3VrfIPDR::recursiveBlockCube(V3IPDRCube* const badCube) {
-   cout << "\n\n\nrecursiveBlockCube\n";
+   //cout << "\n\n\nrecursiveBlockCube\n";
    // Create a Queue for Blocking Cubes
    V3BucketList<V3IPDRCube*> badQueue(getPDRFrame());
    assert (badCube); badQueue.add(getPDRDepth(), badCube);
    // Block Cubes from the Queue
    V3IPDRTimedCube baseCube, generalizedCube;
    while (badQueue.pop(baseCube.first, baseCube.second)) {
+      /*cerr << "baseCube frame: " << baseCube.first <<  ", cube: ";
+      printState( baseCube.second->getState() ); cerr << endl;*/
       assert (baseCube.first < getPDRFrame());
       if (!baseCube.first) {
          // Clear All Cubes in badQueue before Return
@@ -612,7 +612,7 @@ V3VrfIPDR::recursiveBlockCube(V3IPDRCube* const badCube) {
 #ifdef V3_IPDR_USE_PROPAGATE_LOW_COST
 const bool
 V3VrfIPDR::propagateCubes() {
-   cout << "\n\n\npropagateCubes\n";
+   //cout << "\n\n\npropagateCubes\n";
    if (profileON()) _propagateStat->start();
    // Check Each Frame if some Cubes can be Further Propagated
    for (uint32_t i = 1; i < getPDRDepth(); ++i) {
@@ -724,9 +724,9 @@ const bool
 V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, const bool& extend) {
    assert (frame > 0); assert (frame < getPDRFrame());
    // Check if Recycle is Triggered
-   cout << "\ncheckReachability frame : " << frame << " cube : ";
+   /*cout << "\ncheckReachability frame : " << frame << " cube : ";
    printState(cubeState);
-   cout << endl;
+   cout << endl;*/
    //checkCubeSorted(cubeState);
    const uint32_t& d = frame - 1; assert (d < _pdrActCount.size());
    if (!_pdrActCount[d]) recycleSolver(d); _pdrSvr[d]->assumeRelease();
@@ -751,7 +751,7 @@ V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, c
       if (profileON()) _solveStat->end();
       _pdrSvr[d]->assertProperty(_pdrSvr[d]->getNegFormula(_pdrSvrData));  // Invalidate ~cube in future solving
       --_pdrActCount[d];
-      cout << "result: " << result << endl;
+      //cout << "result: " << result << endl;
       return result;
    }
    else {
@@ -759,7 +759,7 @@ V3VrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, c
       _pdrSvr[d]->simplify();
       const bool result = _pdrSvr[d]->assump_solve();
       if (profileON()) _solveStat->end();
-      cout << "result: " << result << endl;
+      //cout << "result: " << result << endl;
       return result;
    }
 }
