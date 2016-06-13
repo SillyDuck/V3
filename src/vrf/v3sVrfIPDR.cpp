@@ -211,7 +211,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    vector<V3BitVecX> history;
    int first = -2;
    
-   if(true){
+   if(false){
       _temFrames.push_back(new V3SIPDRFrame());
       for (unsigned i = 0; i < simDepth; ++i){
          _temFrames.push_back(new V3SIPDRFrame());
