@@ -242,7 +242,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    }
    //_decompDepth = first + 2;
    //_decompDepth = 3;
-   cerr << "QQ\n";
+
    V3BitVecX transient_signals(_vrfNtk->getLatchSize());
    //if(first != -2 ){
    if(false){
@@ -801,13 +801,13 @@ V3SVrfIPDR::existInitial(const V3NetVec& cubeState) {
       if(_decompDepth < 3)
          return false;
 
-      for (unsigned j = 1; j < _decompDepth - 2; ++j){
+      for (unsigned j = 1; j < _decompDepth - 1; ++j){
          _pdrSvr[0]->assumeRelease();
          V3NetId tmpId;
          for (uint32_t i = 0; i < cubeState.size(); ++i){
             tmpId = _finalNtk->_latchMap[j][cubeState[i].id];
             //cerr << "existInitial , getting " << _vrfNtk->getLatch(cubeState[i].id).id << " whose tmpId is " << tmpId.id  << ":" << tmpId.cp << endl;
-            _pdrSvr[0]->assumeProperty(_pdrSvr[0]->getFormula(tmpId,0) , tmpId.cp ^ cubeState[i].cp);
+            _pdrSvr[0]->assumeProperty(_pdrSvr[0]->getFormula(tmpId,0) , cubeState[i].cp);
          }
          if (profileON()) _BMCStat->start();
          _pdrSvr[0]->simplify();
