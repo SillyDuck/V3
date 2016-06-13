@@ -156,6 +156,7 @@ V3SVrfIPDR::V3SVrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
    // Extended Data Members
    _pdrPriority.clear();
    // Statistics
+   setProfile(true);
    if (profileON()) {
       _totalStat     = new V3Stat("TOTAL");
       _initSvrStat   = new V3Stat("SVR INIT",    _totalStat);
@@ -209,6 +210,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    V3AlgAigSimulate* _temSim = new V3AlgAigSimulate(_handler);
    vector<V3BitVecX> history;
    int first = -2;
+   
    if(true){
       _temFrames.push_back(new V3SIPDRFrame());
       for (unsigned i = 0; i < simDepth; ++i){
@@ -239,8 +241,8 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       //cout << endl;
    }
    //_decompDepth = first + 2;
-   _decompDepth = 3;
-
+   //_decompDepth = 3;
+   cerr << "QQ\n";
    V3BitVecX transient_signals(_vrfNtk->getLatchSize());
    //if(first != -2 ){
    if(false){
