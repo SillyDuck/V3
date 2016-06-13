@@ -155,6 +155,7 @@ V3SVrfIPDR::V3SVrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
    _pdrInitValue.clear(); _temFrames.clear();
    // Extended Data Members
    _pdrPriority.clear();
+   _decompDepth = 1;
    // Statistics
    setProfile(true);
    if (profileON()) {
