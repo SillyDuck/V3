@@ -154,8 +154,8 @@ V3NtkExpand::performNtkTransformation(const bool& init) {
          p2cMap[orderMap[i].id] = _ntk->createNet(ntk->getNetWidth(orderMap[i]));
          assert (V3_PI == ntk->getGateType(orderMap[i]));
          _ntk->createInput(p2cMap[orderMap[i].id]);
-         cout << "PI " << orderMap[i].id << endl;
-         cout << "PI " << p2cMap[orderMap[i].id].id << endl;
+         //cout << "PI " << orderMap[i].id << endl;
+         //cout << "PI " << p2cMap[orderMap[i].id].id << endl;
       }
       for (uint32_t j = i + ntk->getInoutSize(); i < j; ++i) {
          assert (parentNets > orderMap[i].id); assert (V3NetUD == p2cMap[orderMap[i].id]);
@@ -171,8 +171,8 @@ V3NtkExpand::performNtkTransformation(const bool& init) {
             id = ntk->getInputNetId(orderMap[i], 0); assert (V3NetUD != _p2cMap[cycle - 1][id.id]);
             p2cMap[orderMap[i].id] = V3NetId::makeNetId(_p2cMap[cycle - 1][id.id].id,
                                                         _p2cMap[cycle - 1][id.id].cp ^ id.cp);
-            cout << "FF0 " << orderMap[i].id << endl;
-            cout << "FF0 " << p2cMap[orderMap[i].id].id << endl;
+            //cout << "FF0 " << orderMap[i].id << endl;
+            //cout << "FF0 " << p2cMap[orderMap[i].id].id << endl;
          }
          else {  // Set Latches as Free Inputs (which will be appended after PI / PIO)
             if (!init) p2cMap[orderMap[i].id] = _ntk->createNet(ntk->getNetWidth(orderMap[i]));
@@ -191,8 +191,8 @@ V3NtkExpand::performNtkTransformation(const bool& init) {
          assert (parentNets > orderMap[i].id); assert (V3NetUD == p2cMap[orderMap[i].id]);
          const V3GateType& type = ntk->getGateType(orderMap[i]); assert (V3_XD > type);
          p2cMap[orderMap[i].id] = _ntk->createNet(ntk->getNetWidth(orderMap[i]));
-         cout << "AIG " << orderMap[i].id << endl;
-         cout << "AIG " << p2cMap[orderMap[i].id].id << endl;
+         //cout << "AIG " << orderMap[i].id << endl;
+         //cout << "AIG " << p2cMap[orderMap[i].id].id << endl;
          if (isBvNtk) {
             assert (AIG_FALSE < type);
             if (BV_CONST == type) {

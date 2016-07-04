@@ -31,11 +31,13 @@ class V3SSvrMiniSat : public V3SvrBase
       void reset();
       void update();
       void assumeInit();
+      void assumeInit(uint32_t k);
       void assertInit();
       void initRelease();
       void assumeRelease();
       void assumeProperty(const size_t&, const bool& = false);
       void assertProperty(const size_t&, const bool& = false);
+      void assumeProperty2(const V3NetId& id, const uint32_t& depth, const bool& invert);
       void assumeProperty(const V3NetId&, const bool&, const uint32_t&);
       void assertProperty(const V3NetId&, const bool&, const uint32_t&);
       const bool simplify();
@@ -68,6 +70,7 @@ class V3SSvrMiniSat : public V3SvrBase
       void add_FALSE_Formula(const V3NetId&, const uint32_t&);
       void add_PI_Formula(const V3NetId&, const uint32_t&);
       void add_FF_Formula(const V3NetId&, const uint32_t&);
+      void add_FF_FormulaTem(const V3NetId&, const uint32_t&);
       void add_AND_Formula(const V3NetId&, const uint32_t&);
       // Network to Solver Functions
       const bool existVerifyData(const V3NetId&, const uint32_t&);
@@ -80,11 +83,14 @@ class V3SSvrMiniSat : public V3SvrBase
       inline const Var getOriVar(const size_t& v) const { return (Var)(v >> 1ul); }
       inline const size_t getPosVar(const Var& v) const { return (((size_t)v) << 1ul); }
       inline const size_t getNegVar(const Var& v) const { return ((getPosVar(v)) | 1ul); }
+      
+
       // Data Members
       MSolver*       _Solver;    // Pointer to a Minisat solver
       Var            _curVar;    // Latest Fresh Variable
       vec<Lit>       _assump;    // Assumption List for assumption solve
-      V3SvrMLitData  _init;      // Initial state Var storage
+      V3SvrMLitData       _init;      // Initial state Var storage
+      vec<V3SvrMLitData>  _init0; // Initial state Var storage
       //V3SvrMLitData  _temporalInit;
       V3SvrMVarTable _ntkData;   // Mapping between V3NetId and Solver Data
 };

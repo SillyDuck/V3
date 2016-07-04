@@ -53,6 +53,11 @@ V3SSvrMiniSat::assumeInit() {
 }
 
 void
+V3SSvrMiniSat::assumeInit(uint32_t k) {
+   for (uint32_t i = 0; i < _init.size(); ++i) _assump.push(_init0[k][i]);
+}
+
+void
 V3SSvrMiniSat::assertInit() {
    //cerr << "assertInit\n";
    for (uint32_t i = 0; i < _init.size(); ++i) _Solver->addClause(_init[i]);
@@ -63,6 +68,11 @@ V3SSvrMiniSat::initRelease() { _init.clear(); }
 
 void
 V3SSvrMiniSat::assumeRelease() { _assump.clear(); }
+
+void
+V3SSvrMiniSat::assumeProperty2(const V3NetId& id, const uint32_t& depth, const bool& invert) {
+   _assump.push(mkLit(getVerifyData(id,depth), invert));
+}
 
 void
 V3SSvrMiniSat::assumeProperty(const size_t& var, const bool& invert) {
@@ -310,6 +320,37 @@ V3SSvrMiniSat::add_PI_Formula(const V3NetId& out, const uint32_t& depth) {
    // Set SATVar
    _ntkData[index].push_back(newVar(1)); assert (getVerifyData(out, depth));
    //cerr << "add_PI_Formula : "  << out.id << endl;
+}
+
+void
+V3SSvrMiniSat::add_FF_FormulaTem(const V3NetId& out, const uint32_t& depth) {
+   //cerr << "add_FF_FormulaTem : " << out.id << " : " << depth << endl;
+   // Check Output Validation
+   assert (validNetId(out)); assert (V3_FF == _ntk->getGateType(out));
+   assert (!getVerifyData(out, depth));
+   assert (depth == _ntkData[out.id].size());
+   const uint32_t width = _ntk->getNetWidth(out); assert (width == 1);
+   if (_freeBound) {
+      // Set SATVar
+      _ntkData[out.id].push_back(newVar(width));
+   }
+   else if (depth) {
+      // Build FF I/O Relation
+      const V3NetId in1 = _ntk->getInputNetId(out, 0); assert (validNetId(in1));
+      const Var var1 = getVerifyData(in1, depth - 1); assert (var1);
+      // Set SATVar
+      if (in1.cp) {
+         _ntkData[out.id].push_back(newVar(width));
+         buf(_Solver, mkLit(_ntkData[out.id].back()), mkLit(var1, true));
+      }
+      else _ntkData[out.id].push_back(var1);
+   }
+   else {
+      // Set SATVar
+      _ntkData[out.id].push_back(newVar(width));
+      const Var& var = _ntkData[out.id].back();
+   }
+   assert (getVerifyData(out, depth));
 }
 
 void

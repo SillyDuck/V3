@@ -118,7 +118,7 @@ class V3SVrfIPDR : public V3VrfBase
       V3SIPDRCube* const recursiveBlockCube(V3SIPDRCube* const);
       const bool propagateCubes();
       // PDR Auxiliary Functions
-      const bool checkReachability(const uint32_t&, const V3NetVec&, const bool& = true);
+      const bool checkReachability(const uint32_t&, const V3NetVec&, const bool& = true, const bool& = false);
       const bool isBlocked(const V3SIPDRTimedCube&);
       const bool existInitial(const V3NetVec&);
 

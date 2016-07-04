@@ -57,7 +57,7 @@ V3SVrfBMC::startVerify(const uint32_t& p) {
       V3NetId id; V3NetVec p2cMap, c2pMap; V3RepIdHash repIdHash; repIdHash.clear();
       simpNtk = duplicateNtk(pNtk, p2cMap, c2pMap); assert (simpNtk);
 
-      printNetlist(simpNtk);
+      //printNetlist(simpNtk);
 
 
       // Create Outputs for the Unrolled Property Signals

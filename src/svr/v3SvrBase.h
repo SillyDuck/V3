@@ -28,6 +28,7 @@ class V3SvrBase
       virtual void assumeRelease();
       virtual void assumeProperty(const size_t&, const bool& = false);
       virtual void assertProperty(const size_t&, const bool& = false);
+      virtual void assumeProperty2(const V3NetId& id, const uint32_t& depth, const bool& invert);
       virtual void assumeProperty(const V3NetId&, const bool&, const uint32_t&);
       virtual void assertProperty(const V3NetId&, const bool&, const uint32_t&);
       virtual const bool simplify();
@@ -63,6 +64,7 @@ class V3SvrBase
       virtual void add_FALSE_Formula(const V3NetId&, const uint32_t&);
       virtual void add_PI_Formula(const V3NetId&, const uint32_t&);
       virtual void add_FF_Formula(const V3NetId&, const uint32_t&);
+      virtual void add_FF_FormulaTem(const V3NetId&, const uint32_t&);
       virtual void add_AND_Formula(const V3NetId&, const uint32_t&);
       virtual void add_XOR_Formula(const V3NetId&, const uint32_t&);
       virtual void add_MUX_Formula(const V3NetId&, const uint32_t&);
@@ -83,6 +85,7 @@ class V3SvrBase
       virtual void add_GEQ_Formula(const V3NetId&, const uint32_t&);
       // Network to Solver Functions
       void addBoundedVerifyData(const V3NetId&, const uint32_t&);
+      void addBoundedVerifyDataTem(const V3NetId&, const uint32_t&);
       virtual const bool existVerifyData(const V3NetId&, const uint32_t&);
       void assertBoundedVerifyData(const V3NetVec&, const uint32_t&);
       // Inline Base Functions
@@ -94,6 +97,7 @@ class V3SvrBase
       // Private Network to Solver Functions
       void addVerifyData(const V3NetId&, const uint32_t&);
       void addSimpleBoundedVerifyData(V3NetId, uint32_t);
+      void addSimpleBoundedVerifyDataTem(V3NetId, uint32_t);
       // Data Members
       const V3Ntk* const   _ntk;       // Network Under Verification
       uint32_t             _solves;    // Number of Solve Called

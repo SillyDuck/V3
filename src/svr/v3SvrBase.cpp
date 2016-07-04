@@ -63,6 +63,10 @@ void
 V3SvrBase::assertProperty(const size_t& var_exp, const bool& invert) {
    Msg(MSG_ERR) << "Calling virtual function V3SvrBase::assertProperty() !!" << endl;
 }
+void
+V3SvrBase::assumeProperty2(const V3NetId& id, const uint32_t& depth, const bool& invert){
+   Msg(MSG_ERR) << "Calling virtual function V3SvrBase::assumeProperty2() !!" << endl;
+}
 
 void
 V3SvrBase::assumeProperty(const V3NetId& id, const bool& invert, const uint32_t& depth) {
@@ -222,6 +226,11 @@ V3SvrBase::add_FF_Formula(const V3NetId& outNet, const uint32_t& depth) {
 }
 
 void
+V3SvrBase::add_FF_FormulaTem(const V3NetId& outNet, const uint32_t& depth) {
+   Msg(MSG_ERR) << "Calling virtual function V3SvrBase::add_FF_Formula() !!" << endl;
+}
+
+void
 V3SvrBase::add_AND_Formula(const V3NetId& outNet, const uint32_t& depth) {
    Msg(MSG_ERR) << "Calling virtual function V3SvrBase::add_AND_Formula) !!" << endl;
 }
@@ -313,6 +322,12 @@ V3SvrBase::add_GEQ_Formula(const V3NetId& outNet, const uint32_t& depth) {
 
 // Network to Solver Functions
 void
+V3SvrBase::addBoundedVerifyDataTem(const V3NetId& id, const uint32_t& depth) {
+   assert (validNetId(id)); if (existVerifyData(id, depth)) return;
+   addSimpleBoundedVerifyDataTem(id, depth);
+}
+
+void
 V3SvrBase::addBoundedVerifyData(const V3NetId& id, const uint32_t& depth) {
    assert (validNetId(id)); if (existVerifyData(id, depth)) return;
    addSimpleBoundedVerifyData(id, depth);
@@ -366,6 +381,45 @@ V3SvrBase::addVerifyData(const V3NetId& id, const uint32_t& depth) {
 }
 
 void
+V3SvrBase::addSimpleBoundedVerifyDataTem(V3NetId id, uint32_t depth) {
+   V3Stack<pair<V3NetId, uint32_t> >::Stack netIdList; assert (!netIdList.size());
+   pair<V3NetId, uint32_t> netId = make_pair(id, depth); netIdList.push(netId);
+   V3GateType type;
+   while (!netIdList.empty()) {
+      netId = netIdList.top(); id = netId.first; depth = netId.second;
+      assert (validNetId(id)); assert (!existVerifyData(id, depth));
+      type = _ntk->getGateType(id); assert (type < V3_XD);
+      if (V3_PIO >= type) add_PI_Formula(id, depth);
+      else if (V3_FF == type) {
+         if (depth) {
+            netId.first = _ntk->getInputNetId(id, 0); --netId.second;
+            if (!existVerifyData(netId.first, netId.second)) {
+               netIdList.push(netId); continue; }
+         }
+         else {
+         }
+         add_FF_FormulaTem(id, depth);
+      }
+      else if (AIG_FALSE >= type) {
+         if (AIG_NODE == type) {
+            //cout << "AIG_NODE " << id.id << " ";
+            netId.first = _ntk->getInputNetId(id, 0); if (!existVerifyData(netId.first, depth)) {
+               //cerr << "pushed:" << netId.first.id << endl;
+               netIdList.push(netId); continue; }
+            netId.first = _ntk->getInputNetId(id, 1); if (!existVerifyData(netId.first, depth)) {
+               //cerr << "pushed:" << netId.first.id << endl;
+               netIdList.push(netId); continue; }
+            add_AND_Formula(id, depth);
+         }
+         else { assert (AIG_FALSE == type); add_FALSE_Formula(id, depth); }
+      }
+      else { assert (0);}
+      //cout << endl;
+      netIdList.pop();
+   }
+}
+
+void
 V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
    V3Stack<pair<V3NetId, uint32_t> >::Stack netIdList; assert (!netIdList.size());
    pair<V3NetId, uint32_t> netId = make_pair(id, depth); netIdList.push(netId);
@@ -379,16 +433,15 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
       else if (V3_FF == type) {
          if (depth) {
             netId.first = _ntk->getInputNetId(id, 0); --netId.second;
-            if (!existVerifyData(netId.first, netId.second)) { netIdList.push(netId); continue; }
+            if (!existVerifyData(netId.first, netId.second)) {
+               //cerr << "pushed:" << netId.first.id << endl;
+               netIdList.push(netId); continue; }
          }
          else {
-/*            if(!_tem){
-
-            }
-            else{*/
             netId.first = _ntk->getInputNetId(id, 1);
-            if (id.id != netId.first.id && !existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
-/*            }*/
+            if (id.id != netId.first.id && !existVerifyData(netId.first, depth)) {
+               //cerr << "pushed:" << netId.first.id << endl;
+               netIdList.push(netId); continue; }
          }
          //cout << "FF" << " ";
          add_FF_Formula(id, depth);
@@ -396,13 +449,18 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
       else if (AIG_FALSE >= type) {
          if (AIG_NODE == type) {
             //cout << "AIG_NODE " << id.id << " ";
-            netId.first = _ntk->getInputNetId(id, 0); if (!existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
-            netId.first = _ntk->getInputNetId(id, 1); if (!existVerifyData(netId.first, depth)) { netIdList.push(netId); continue; }
+            netId.first = _ntk->getInputNetId(id, 0); if (!existVerifyData(netId.first, depth)) {
+               //cerr << "pushed:" << netId.first.id << endl;
+               netIdList.push(netId); continue; }
+            netId.first = _ntk->getInputNetId(id, 1); if (!existVerifyData(netId.first, depth)) {
+               //cerr << "pushed:" << netId.first.id << endl;
+               netIdList.push(netId); continue; }
             add_AND_Formula(id, depth);
          }
          else { assert (AIG_FALSE == type); add_FALSE_Formula(id, depth); }
       }
       else if (isV3PairType(type)) {
+         assert(0);
          assert (BV_AND == type || BV_XOR == type || BV_ADD == type || BV_SUB == type || BV_SHL == type || 
                BV_SHR == type || BV_MERGE == type || BV_EQUALITY == type || BV_GEQ == type || BV_MULT == type || 
                BV_DIV == type || BV_MODULO == type);
@@ -447,6 +505,7 @@ V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
       netIdList.pop();
    }
 }
+
 
 #endif
 
