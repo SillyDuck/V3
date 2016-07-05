@@ -198,8 +198,11 @@ V3SVrfIPDR::~V3SVrfIPDR() {
 isIncKeepLastReachability(): If the last result is unsat, put the inductive invariant into the last frame.
 isIncContinueOnLastSolver(): Valid only if isIncKeepLastReachability() is true.
 \* ---------------------------------------------------------------------------------------------------- */
+
 void
 V3SVrfIPDR::startVerify(const uint32_t& p) {
+   startVerify2(p);
+   return;
    // Initialize Parameters
    uint32_t proved = V3NtkUD, fired = V3NtkUD;
    struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
@@ -246,7 +249,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
 
    }
    if (V3NtkUD != fired2){
-      Msg(MSG_IFO) << "Counter-example found at depth = " << fired2;
+      //Msg(MSG_IFO) << "Counter-example found at depth = " << fired2;
       fired = fired2 -1;
       if (!isIncKeepSilent() && reportON()) {
          if (intactON()) {
@@ -1233,5 +1236,19 @@ V3SVrfIPDR::printState(const V3NetVec& state) const {
       cerr << (state[i].cp ? "~" : "") << state[i].id << " ";
    cerr << endl;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif

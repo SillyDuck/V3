@@ -82,7 +82,7 @@ class V3SIPDRFrame
       ~V3SIPDRFrame();
       // Retrieval Functions
       inline const V3SIPDRCubeList& getCubeList() const { return _cubeList; }
-      inline const bool pushCube(V3SIPDRCube* const);
+      const bool pushCube(V3SIPDRCube* const);
       inline void clearCubeList() { _cubeList.clear(); }
       // Cube Containment Functions
       const bool subsumes(const V3SIPDRCube* const) const;
@@ -108,30 +108,41 @@ class V3SVrfIPDR : public V3VrfBase
       //inline const bool isForwardUNSATGen() const { return _pdrAttr & 2ul; }
       // Private Verification Main Functions
       void startVerify(const uint32_t&);
+      void startVerify2(const uint32_t&);
       // PDR Initialization Functions
       void initializeSolver(const uint32_t&, const bool& = false);
+      void initializeSolver2(const uint32_t&, const bool& = false);
       void addCubeToSolver(const uint32_t&, const V3NetVec&, const uint32_t&);
+      void addCubeToSolver2(const uint32_t&, const V3NetVec&, const uint32_t&);
       void addLastFrameInfoToSolvers();
       void recycleSolver(const uint32_t&);
       // PDR Main Functions
       V3SIPDRCube* const getInitialObligation();
       V3SIPDRCube* const recursiveBlockCube(V3SIPDRCube* const);
+      V3SIPDRCube* const recursiveBlockCube2(V3SIPDRCube* const);
       const bool propagateCubes();
       // PDR Auxiliary Functions
       const bool checkReachability(const uint32_t&, const V3NetVec&, const bool& = true, const bool& = false);
+      const bool checkReachability2(const uint32_t&, const V3NetVec&, const bool& = true, const bool& = false);
       const bool isBlocked(const V3SIPDRTimedCube&);
       const bool existInitial(const V3NetVec&);
+      const bool existInitial2(const V3NetVec&);
 
       V3SIPDRCube* const extractModel(const uint32_t&, const V3SIPDRCube* const);
+      V3SIPDRCube* const extractModel2(const uint32_t&, const V3SIPDRCube* const);
       V3SIPDRCube* const forwardModel(const V3SIPDRCube* const);
 
       void generalization(V3SIPDRTimedCube&);
+      void generalization2(V3SIPDRTimedCube&);
       void addBlockedCube(const V3SIPDRTimedCube&);
+      void addBlockedCube2(const V3SIPDRTimedCube&);
       void recordCubeInputForTraceLog(V3SIPDRCube* const&);
 
       // PDR Generalization Functions
       void generalizeSimulation(const uint32_t&, V3SIPDRCube* const, const V3SIPDRCube* const);
+      void generalizeSimulation2(const uint32_t&, V3SIPDRCube* const, const V3SIPDRCube* const);
       const bool removeFromProof(V3SIPDRTimedCube&);
+      const bool removeFromProof2(V3SIPDRTimedCube&);
       void generalizeProof(V3SIPDRTimedCube&);
       void forwardProof(V3SIPDRTimedCube&);
       const bool generalizeCex(V3SIPDRTimedCube&);
