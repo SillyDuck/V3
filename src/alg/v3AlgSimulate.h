@@ -24,6 +24,7 @@ class V3AlgSimulate
       // Simulation Main Functions
       virtual void simulate();
       virtual void reset(const V3NetVec& = V3NetVec());
+      virtual void reset2(const V3NetVec& = V3NetVec());
       // Simulation Data Functions
       virtual const V3BitVecX getSimValue(const V3NetId&) const;
       // Simulation Setting Functions
@@ -70,6 +71,7 @@ class V3AlgAigSimulate : public V3AlgSimulate
       // Simulation Main Functions
       void simulate();
       void reset(const V3NetVec& = V3NetVec());
+      void reset2(const V3NetVec& = V3NetVec());
       // Simulation Data Functions
       const V3BitVecX getSimValue(const V3NetId&) const;
       // Simulation Setting Functions

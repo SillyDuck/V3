@@ -201,8 +201,8 @@ isIncContinueOnLastSolver(): Valid only if isIncKeepLastReachability() is true.
 
 void
 V3SVrfIPDR::startVerify(const uint32_t& p) {
-   startVerify2(p);
-   return;
+   /*startVerify2(p);
+   return;*/
    // Initialize Parameters
    uint32_t proved = V3NtkUD, fired = V3NtkUD;
    struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
@@ -288,7 +288,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    vector<V3BitVecX> history;
    int first = -2;
    // TODO turn off this
-   if(true){
+   if(false){
       _temFrames.push_back(new V3SIPDRFrame());
       for (unsigned i = 0; i < simDepth; ++i){
          _temFrames.push_back(new V3SIPDRFrame());
@@ -385,7 +385,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    //V3PlotNtkByLevel(newHandler, gg.c_str(), 20, outputNets, false);
    cout << "decompDepth : " << _decompDepth << endl;
 
-   
+
 
    V3NetVec simTargets(1, _vrfNtk->getOutput(p)); _pdrSim->reset(simTargets);
    // Initialize Pattern Input Size
@@ -872,7 +872,7 @@ V3SVrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, 
          const bool result = _pdrSvr[d]->assump_solve();
          if (profileON()) _solveStat->end();
          _pdrSvr[d]->assertProperty(_pdrSvr[d]->getNegFormula(_pdrSvrData));  // Invalidate ~cube in future solving
-         if(heavy_debug && !notImportant) cerr << "result: " << result << endl;
+         if(heavy_debug && !notImportant) cerr << "result: " << result << endl << endl;
          return result;
       }
       else {
@@ -880,7 +880,7 @@ V3SVrfIPDR::checkReachability(const uint32_t& frame, const V3NetVec& cubeState, 
          _pdrSvr[d]->simplify();
          const bool result = _pdrSvr[d]->assump_solve();
          if (profileON()) _solveStat->end();
-         if(heavy_debug && !notImportant) cerr << "result: " << result << endl;
+         if(heavy_debug && !notImportant) cerr << "result: " << result << endl << endl;
          return result;
       }
    //}
@@ -898,8 +898,8 @@ V3SVrfIPDR::isBlocked(const V3SIPDRTimedCube& timedCube) {
 const bool
 V3SVrfIPDR::existInitial(const V3NetVec& cubeState) {
    // checkReachability frame : 0 cube : state
-   //cerr << "\ncheckexistInitial , cube : "; printState(cubeState); 
-   if(false){
+   //cerr << "\ncheckexistInitial , cube : "; printState(cubeState);
+   if(true){
       bool tmpBool = true;
       for (uint32_t i = 0; i < cubeState.size(); ++i) {
          assert (cubeState[i].id < _pdrInitValue.size());

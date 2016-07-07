@@ -135,7 +135,6 @@ class V3SVrfIPDR : public V3VrfBase
       void generalization(V3SIPDRTimedCube&);
       void generalization2(V3SIPDRTimedCube&);
       void addBlockedCube(const V3SIPDRTimedCube&);
-      void addBlockedCube2(const V3SIPDRTimedCube&);
       void recordCubeInputForTraceLog(V3SIPDRCube* const&);
 
       // PDR Generalization Functions

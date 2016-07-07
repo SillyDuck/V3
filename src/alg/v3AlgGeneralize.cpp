@@ -280,6 +280,11 @@ V3AlgGeneralize::setTargetNets(const V3NetVec& curTargets, const V3NetVec& nextT
    Msg(MSG_ERR) << "Calling virtual function V3AlgGeneralize::setTargetNets() !!" << endl;
 }
 
+void
+V3AlgGeneralize::setTargetNets2(const V3NetVec& curTargets, const V3NetVec& nextTargets, const uint32_t d) {
+   Msg(MSG_ERR) << "Calling virtual function V3AlgGeneralize::setTargetNets2() !!" << endl;
+}
+
 const V3NetVec
 V3AlgGeneralize::getUndecided() const {
    V3NetVec result; result.clear(); result.reserve(_undecided.size());
@@ -307,7 +312,7 @@ V3AlgGeneralize::performFixForControlVars(const bool& parallelSim) {
 
 // Generalization Heuristics
 void
-V3AlgGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder) {
+V3AlgGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder, const bool& tem ) {
    Msg(MSG_ERR) << "Calling virtual function V3AlgGeneralize::performXPropForExtensibleVars() !!" << endl;
 }
 
@@ -325,7 +330,6 @@ V3AlgAigGeneralize::V3AlgAigGeneralize(const V3NtkHandler* const handler) : V3Al
    assert (!dynamic_cast<V3BvNtk*>(_handler->getNtk()));
    _isFrozen = V3BoolVec(_handler->getNtk()->getNetSize());
    _traverse = V3BoolVec(_handler->getNtk()->getNetSize());
-   _tem = false;
 }
 
 V3AlgAigGeneralize::~V3AlgAigGeneralize() {
@@ -343,6 +347,34 @@ V3AlgAigGeneralize::setTargetNets(const V3NetVec& curTargets, const V3NetVec& ne
       assert (V3_FF == ntk->getGateType(ntk->getLatch(nextTargets[i].id)));
       _targetId.push_back(ntk->getInputNetId(ntk->getLatch(nextTargets[i].id), 0));
       if (nextTargets[i].cp) _targetId.back() = ~(_targetId.back());
+      assert (_targetId.back().cp == ('0' == _simValue[_targetId.back().id][0]));
+   }
+   for (uint32_t i = 0; i < curTargets.size(); ++i) {
+      assert (curTargets[i].id < ntk->getNetSize()); _targetId.push_back(curTargets[i]);
+      assert (_targetId.back().cp == ('0' == _simValue[_targetId.back().id][0]));
+   }
+   // Reset Generalization Data
+   _genResult.clear(); _undecided.clear();
+   for (uint32_t i = 0, j = ntk->getLatchSize(); i < j; ++i) {
+      if ('X' == _simValue[ntk->getLatch(i).id][0]) continue;
+      _genResult.push_back(V3NetId::makeNetId(i, ('0' == _simValue[ntk->getLatch(i).id][0])));
+      _undecided.push_back(_genResult.back()); assert (_genResult.size() == _undecided.size());
+   }
+   for (uint32_t i = 0; i < ntk->getNetSize(); ++i) _isFrozen[i] = ('X' == _simValue[i][0]);
+   for (uint32_t i = 0; i < ntk->getNetSize(); ++i) _traverse[i] = false;
+   initializeEventList(); assert (generalizationValid());
+}
+
+void
+V3AlgAigGeneralize::setTargetNets2(const V3NetVec& curTargets, const V3NetVec& nextTargets, const uint32_t d) {
+   // Note that curTargets are NetIds while nextTargets are Flop Indices
+   V3Ntk* const ntk = _handler->getNtk(); assert (ntk); _targetId.clear();
+   // Set New Target Nets
+   for (uint32_t i = 0; i < nextTargets.size(); ++i) {
+      assert (nextTargets[i].id < ntk->getLatchSize());
+      _targetId.push_back(_handler->_latchMap->at(d)[nextTargets[i].id]);
+      if (nextTargets[i].cp) _targetId.back() = ~(_targetId.back());
+
       assert (_targetId.back().cp == ('0' == _simValue[_targetId.back().id][0]));
    }
    for (uint32_t i = 0; i < curTargets.size(); ++i) {
@@ -499,12 +531,12 @@ V3AlgAigGeneralize::performFixForControlVars(const bool& parallelSim) {
 
 // Generalization Heuristics
 void
-V3AlgAigGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder) {
+V3AlgAigGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder, const bool& tem) {
    V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
    if (!_undecided.size() || !generalizeOrder.size()) return;
    // Mark Fanin Cone from Targets
    for (uint32_t i = 0; i < _traverse.size(); ++i) _traverse[i] = false;
-   if(_tem)
+   if(tem)
       for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninConeTem(ntk, _targetId[i], _traverse);
    else
       for (uint32_t i = 0; i < _targetId.size(); ++i) dfsMarkFaninCone(ntk, _targetId[i], _traverse);
@@ -888,7 +920,11 @@ V3AlgAigGeneralize::generalizationValid() {
       else _simValue[ntk->getLatch((*it).id).id].set1(0); ++it;
    }
    simulate();
-   for (uint32_t i = 0; i < _targetId.size(); ++i) 
+   /*for (uint32_t i = 0; i < _targetId.size(); ++i){
+      cerr << "_targetId[i].id" << _targetId[i].id << " : " << _targetId[i].cp << ":";
+      cerr << _simValue[_targetId[i].id][0] << endl;
+   }*/
+   for (uint32_t i = 0; i < _targetId.size(); ++i)
       if ((_targetId[i].cp ? '0' : '1') != _simValue[_targetId[i].id][0]) return false;
    return true;
 }
@@ -1062,7 +1098,7 @@ V3AlgBvGeneralize::performFixForControlVars(const bool& parallelSim) {
 
 // Generalization Heuristics
 void
-V3AlgBvGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder) {
+V3AlgBvGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder, const bool& tem) {
    V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
    if (!_undecided.size() || !generalizeOrder.size()) return;
    // Mark Fanin Cone from Targets

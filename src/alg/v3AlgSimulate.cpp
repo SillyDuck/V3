@@ -39,6 +39,9 @@ V3AlgSimulate::getStateBV(V3BitVecX & data, bool verbose){}
 void
 V3AlgSimulate::reset(const V3NetVec& targetNets) { resetSimulator(); }
 
+void
+V3AlgSimulate::reset2(const V3NetVec& targetNets) { cerr << "ERROR!!!" << endl; assert(0); }
+
 // Simulation Data Functions
 const V3BitVecX
 V3AlgSimulate::getSimValue(const V3NetId& id) const { return V3BitVecX(); }
@@ -187,6 +190,22 @@ V3AlgAigSimulate::reset(const V3NetVec& targetNets) {
    V3Ntk* const ntk = _handler->getNtk(); assert (ntk); resetSimulator(); _targets = targetNets;
    _init[0] = ntk->getConstSize() + ntk->getInputSize() + ntk->getInoutSize() + ntk->getLatchSize();
    _init[1] = dfsNtkForSimulationOrder(_handler->getNtk(), _orderMap, _targets); assert (_init[1] >= _init[0]);
+   // Initialize Simulation Data and Reset Value
+   _simValue = V3AigSimDataVec(ntk->getNetSize()); assert (_orderMap.size() <= _simValue.size());
+   for (uint32_t i = 0; i < ntk->getConstSize(); ++i) {
+      assert (_orderMap[i] == ntk->getConst(i)); _simValue[ntk->getConst(i).id].setZeros(~0ul);
+   }
+   _dffValue = V3AigSimDataVec(ntk->getLatchSize()); _traceData.clear(); _simRecord.clear(); _cycle = 0;
+   // Initial Simulation : PI, PIO, DFF = X
+   setSourceFree(V3_PI, false); setSourceFree(V3_PIO, false); setSourceFree(V3_FF, false); simulate();
+}
+
+void
+V3AlgAigSimulate::reset2(const V3NetVec& targetNets) {
+   // Initialize Simulation Order
+   V3Ntk* const ntk = _handler->getNtk(); assert (ntk); resetSimulator(); _targets = targetNets;
+   _init[0] = ntk->getConstSize() + ntk->getInputSize() + ntk->getInoutSize() + ntk->getLatchSize();
+   _init[1] = dfsNtkForSimulationOrder2(_handler->getNtk(), _orderMap, _targets); assert (_init[1] >= _init[0]);
    // Initialize Simulation Data and Reset Value
    _simValue = V3AigSimDataVec(ntk->getNetSize()); assert (_orderMap.size() <= _simValue.size());
    for (uint32_t i = 0; i < ntk->getConstSize(); ++i) {

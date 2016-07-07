@@ -64,6 +64,7 @@ const uint32_t computeLevel(V3Ntk* const, V3UI32Vec&, const V3NetVec& = V3NetVec
 // General DFS Traversal Functions for V3 Ntk
 const uint32_t dfsNtkForGeneralOrder(V3Ntk* const, V3NetVec&, const V3NetVec& = V3NetVec(), const bool& = false);
 const uint32_t dfsNtkForSimulationOrder(V3Ntk* const, V3NetVec&, const V3NetVec& = V3NetVec(), const bool& = false);
+const uint32_t dfsNtkForSimulationOrder2(V3Ntk* const, V3NetVec&, const V3NetVec& = V3NetVec(), const bool& = false);
 const uint32_t dfsNtkForReductionOrder(V3Ntk* const, V3NetVec&, const V3NetVec& = V3NetVec(), const bool& = false);
 // General DFS Fanin Cone Marking Functions for V3 Ntk
 void dfsMarkFaninCone(V3Ntk* const, const V3NetId&, V3BoolVec&);

@@ -83,13 +83,14 @@ class V3AlgGeneralize {
       virtual ~V3AlgGeneralize();
       // Generalization Main Functions
       virtual void setTargetNets(const V3NetVec&, const V3NetVec& = V3NetVec());
+      virtual void setTargetNets2(const V3NetVec&, const V3NetVec& = V3NetVec(), const uint32_t d = 0);
       const V3NetVec getUndecided() const;
       const V3NetVec getGeneralizationResult() const;
       // Preprocessing Techniques
       virtual void performSetXForNotCOIVars(const bool& = false);
       virtual void performFixForControlVars(const bool& = true);
       // Generalization Heuristics
-      virtual void performXPropForExtensibleVars(const V3UI32Vec&);
+      virtual void performXPropForExtensibleVars(const V3UI32Vec&, const bool& tem = false);
       virtual void performXPropForMinimizeTransitions(const uint32_t&, const V3NetVec& = V3NetVec());
    protected : 
       // Private Data Members
@@ -105,13 +106,13 @@ class V3AlgAigGeneralize : public V3AlgAigSimulate, public V3AlgGeneralize {
       ~V3AlgAigGeneralize();
       // Generalization Main Functions
       void setTargetNets(const V3NetVec&, const V3NetVec& = V3NetVec());
+      void setTargetNets2(const V3NetVec&, const V3NetVec& = V3NetVec(), const uint32_t d = 0);
       // Preprocessing Techniques
       void performSetXForNotCOIVars(const bool& = false);
       void performFixForControlVars(const bool& = true);
       // Generalization Heuristics
-      void performXPropForExtensibleVars(const V3UI32Vec&);
+      void performXPropForExtensibleVars(const V3UI32Vec&, const bool& tem = false);
       void performXPropForMinimizeTransitions(const uint32_t&, const V3NetVec& = V3NetVec());
-      bool                 _tem;
    private : 
       // Private Generalization Functions
       void simulateForGeneralization(const V3NetId&, const V3BitVecS&);
@@ -139,7 +140,7 @@ class V3AlgBvGeneralize : public V3AlgBvSimulate, public V3AlgGeneralize {
       void performSetXForNotCOIVars(bool);
       void performFixForControlVars(const bool& = true);
       // Generalization Heuristics
-      void performXPropForExtensibleVars(const V3UI32Vec&);
+      void performXPropForExtensibleVars(const V3UI32Vec&, const bool& tem = false);
       void performXPropForMinimizeTransitions(const uint32_t&, const V3NetVec& = V3NetVec());
    private : 
       // Private Generalization Functions

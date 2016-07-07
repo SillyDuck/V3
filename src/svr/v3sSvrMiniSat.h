@@ -74,7 +74,7 @@ class V3SSvrMiniSat : public V3SvrBase
       void add_AND_Formula(const V3NetId&, const uint32_t&);
       // Network to Solver Functions
       const bool existVerifyData(const V3NetId&, const uint32_t&);
-   private : 
+   //private :
       // MiniSat Functions
       const Var newVar(const uint32_t&);
       const Var getVerifyData(const V3NetId&, const uint32_t&) const;
@@ -83,7 +83,6 @@ class V3SSvrMiniSat : public V3SvrBase
       inline const Var getOriVar(const size_t& v) const { return (Var)(v >> 1ul); }
       inline const size_t getPosVar(const Var& v) const { return (((size_t)v) << 1ul); }
       inline const size_t getNegVar(const Var& v) const { return ((getPosVar(v)) | 1ul); }
-      
 
       // Data Members
       MSolver*       _Solver;    // Pointer to a Minisat solver
@@ -98,7 +97,7 @@ class V3SSvrMiniSat : public V3SvrBase
 /*
       //v3s functions
       //void addFF_FaninConetoSolver(MSolver* solver, V3NetId id){}
-   //protected : 
+   //protected :
       // Private Network to Solver Functions
       void addVerifyData(const V3NetId&, const uint32_t&);
       void addSimpleBoundedVerifyData(V3NetId, uint32_t);

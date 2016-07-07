@@ -421,6 +421,7 @@ V3SvrBase::addSimpleBoundedVerifyDataTem(V3NetId id, uint32_t depth) {
 
 void
 V3SvrBase::addSimpleBoundedVerifyData(V3NetId id, uint32_t depth) {
+   //cerr << "addSimpleBoundedVerifyData" << id.id << endl;
    V3Stack<pair<V3NetId, uint32_t> >::Stack netIdList; assert (!netIdList.size());
    pair<V3NetId, uint32_t> netId = make_pair(id, depth); netIdList.push(netId);
    V3GateType type;

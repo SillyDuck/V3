@@ -173,6 +173,8 @@ class V3NtkHandler
       static string        V3AuxNameBitSuffix;
       static string        V3AuxExpansionName;
       static string        V3AuxNetNamePrefix;
+      V3NetTable *         _latchMap;
+      uint32_t             _decDep;
    private : 
       // Static Members for Global Control
       static unsigned char _extVerbosity;

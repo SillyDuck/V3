@@ -532,7 +532,8 @@ V3Handler::V3Handler() {
 }
 
 V3Handler::~V3Handler() {
-   uint32_t i = _ntkHandlerList.size(); while (i--) { delete _ntkHandlerList[i]; }
+   uint32_t i = _ntkHandlerList.size();
+   //while (i--) { delete _ntkHandlerList[i]; }
    _ntkHandlerList.clear(); _curRefIdVec.clear(); _lastRefIdVec.clear();
 }
 

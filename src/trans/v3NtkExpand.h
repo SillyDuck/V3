@@ -38,5 +38,31 @@ class V3NtkExpand : public V3NtkHandler
       V3NetTable     _p2cMap;    // V3NetId Mapping From Parent to Current Ntk
 };
 
+class V3NtkExpand2 : public V3NtkHandler
+{
+   public : 
+      // Constructor and Destructor
+      V3NtkExpand2(V3NtkHandler* const, const uint32_t&, const bool& = false);
+      ~V3NtkExpand2();
+      // Inline Member Functions
+      inline const uint32_t& getCycle() const { return _cycle; }
+      // I/O Ancestry Functions
+      const string getInputName(const uint32_t&) const;
+      const string getOutputName(const uint32_t&) const;
+      const string getInoutName(const uint32_t&) const;
+      // Net Ancestry Functions
+      void getNetName(V3NetId&, string&) const;
+      const V3NetId getNetFromName(const string&) const;
+      const V3NetId getParentNetId(const V3NetId&) const;
+      const V3NetId getCurrentNetId(const V3NetId&, const uint32_t&) const;
+      // Transformation Functions
+      void performNtkTransformation(const bool& = false);
+      // Private Members
+      const uint32_t _cycle;     // Number of Cycles for Expansion
+      V3NetVec       _c2pMap;    // V3NetId Mapping From Current to Parent Ntk
+      V3NetTable     _p2cMap;    // V3NetId Mapping From Parent to Current Ntk
+      V3NetTable     _latchMap;
+};
+
 #endif
 

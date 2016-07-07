@@ -45,6 +45,7 @@ void dfsComputeFanout(V3Ntk* const ntk, const V3NetId& pId, V3BoolVec& m, V3NetT
 
 void computeFanout(V3Ntk* const ntk, V3NetTable& outputTable, const V3NetVec& targetNets) {
    assert (ntk); outputTable.clear(); outputTable.reserve(ntk->getNetSize());
+   if (targetNets.size()) for (uint32_t i = 0; i < targetNets.size(); ++i) cout << targetNets[i].id << endl;
    for (uint32_t i = 0; i < ntk->getNetSize(); ++i) outputTable.push_back(V3NetVec());
    V3BoolVec m(ntk->getNetSize(), false);
    // Set Latest Misc Data on (Pseudo) PI / PIO / Const
@@ -156,6 +157,7 @@ void dfsGeneralOrder(V3Ntk* const ntk, const V3NetId& pId, V3BoolVec& m, V3NetVe
 }
 
 void dfsSimulationOrder(V3Ntk* const ntk, const V3NetId& pId, V3BoolVec& m, V3NetVec& orderMap) {
+   //cerr << "pId " << pId.id << endl;
    assert (ntk); assert (m.size() == ntk->getNetSize());
    V3Stack<V3NetId>::Stack s; s.push(pId); V3BoolVec t(ntk->getNetSize(), false);
    V3NetId id; V3GateType type; uint32_t inSize;
@@ -319,6 +321,38 @@ const uint32_t dfsNtkForSimulationOrder(V3Ntk* const ntk, V3NetVec& orderMap, co
       dfsSimulationOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 0), m, orderMap);
    for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) 
       dfsSimulationOrder(ntk, ntk->getInputNetId(ntk->getInout(i), 0), m, orderMap);
+   if (targetNets.size())
+      for (uint32_t i = 0; i < targetNets.size(); ++i) dfsSimulationOrder(ntk, targetNets[i], m, orderMap);
+   else
+      for (uint32_t i = 0; i < ntk->getOutputSize(); ++i) dfsSimulationOrder(ntk, ntk->getOutput(i), m, orderMap);
+   // Put Nets Not in COI into orderMap
+   if (allNets)
+      for (V3NetId id = V3NetId::makeNetId(0); id.id < ntk->getNetSize(); ++id.id)
+         if (!m[id.id]) dfsSimulationOrder(ntk, id, m, orderMap);
+   assert (orderMap.size() <= ntk->getNetSize()); return initEndIndex;
+}
+
+const uint32_t dfsNtkForSimulationOrder2(V3Ntk* const ntk, V3NetVec& orderMap, const V3NetVec& targetNets, const bool& allNets) {
+   assert (ntk); V3BoolVec m(ntk->getNetSize(), false);
+   orderMap.clear(); orderMap.reserve(ntk->getNetSize());
+   V3NtkHandler* _handler =  v3Handler.getCurHandler();
+   // Constants
+   for (uint32_t i = 0; i < ntk->getConstSize(); ++i) orderMap.push_back(ntk->getConst(i));
+   // (Pseudo) Primary Inputs
+   for (uint32_t i = 0; i < ntk->getInputSize(); ++i) orderMap.push_back(ntk->getInput(i));
+   for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) orderMap.push_back(ntk->getInout(i));
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) orderMap.push_back(ntk->getLatch(i));
+   for (uint32_t i = 0; i < orderMap.size(); ++i) m[orderMap[i].id] = true;
+   // Pseudo Primary Input Initial State Logics
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
+      dfsSimulationOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 1), m, orderMap);
+   // Record End of Initial Logic if Needed  (e.g. simulator)
+   const uint32_t initEndIndex = orderMap.size();
+   // (Pseudo) Primary Output Fanin Logics
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
+      dfsSimulationOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 0), m, orderMap);
+   for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
+      dfsSimulationOrder(ntk, _handler->_latchMap->at( _handler->_decDep)[i], m, orderMap);
    if (targetNets.size())
       for (uint32_t i = 0; i < targetNets.size(); ++i) dfsSimulationOrder(ntk, targetNets[i], m, orderMap);
    else

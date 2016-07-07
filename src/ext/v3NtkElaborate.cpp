@@ -32,7 +32,7 @@ V3NtkElaborate::V3NtkElaborate(V3NtkHandler* const handler, const V3NetVec& targ
 }
 
 V3NtkElaborate::~V3NtkElaborate() {
-   for (uint32_t i = 0; i < _pOutput.size(); ++i) delete _pOutput[i];
+   //for (uint32_t i = 0; i < _pOutput.size(); ++i) delete _pOutput[i];
    _c2pMap.clear(); _p2cMap.clear(); _pOutput.clear(); _shadow.clear();
 }
 
