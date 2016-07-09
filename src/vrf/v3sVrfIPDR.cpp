@@ -214,10 +214,8 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
 
    // Start BMC Based Verification
    V3Ntk* simpNtk = 0; V3SvrBase* solver = 0;
-   while (boundDepth <= 1000) {
+   while (boundDepth <= _decompDepth) {
       // Check Time Bounds
-      gettimeofday(&curtime, NULL);
-      if (1 < getTimeUsed(inittime, curtime)) break;
       boundDepth += 1;
 
       // Expand Network and Set Initial States
@@ -343,7 +341,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    }
 
    if(_tem_decomp == false) _decompDepth = 1;
-   _decompDepth = boundDepth;
+
    // set FFs to be constant
    cerr << "Original Circuit Latch Size : " << _vrfNtk->getLatchSize() << endl;
    V3NtkTemDecomp* const pNtk = new V3NtkTemDecomp(_handler, 1 , transient_signals , false); assert (pNtk);
@@ -534,10 +532,6 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
 
    // Report Verification Result
    if (!isIncKeepSilent() && reportON()) {
-      if (intactON()) {
-         if (endLineON()) Msg(MSG_IFO) << endl;
-         else Msg(MSG_IFO) << "\r" << flushSpace << "\r";
-      }
       if (V3NtkUD != proved) Msg(MSG_IFO) << "Inductive Invariant found at depth = " << ++proved;
       else if (V3NtkUD != fired) Msg(MSG_IFO) << "Counter-example found at depth = " << ++fired;
       else Msg(MSG_IFO) << "UNDECIDED at depth = " << _maxDepth;
