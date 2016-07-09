@@ -5,7 +5,7 @@
   Author       [ SillyDuck ]
   Copyright    [ Copyright(c) 2016 DVLab, GIEE, NTU, Taiwan ]
 ****************************************************************************/
-#define heavy_debug 1
+#define heavy_debug 0
 #define frame_info 0
 
 #ifndef V3S_VRF_IPDR2_C
@@ -44,15 +44,15 @@ V3SVrfIPDR::startVerify2(const uint32_t& p) {
    _vrfNtk = pNtk->getNtk();
    //_handler->_latchMap = V3NetTable(_cycle, V3NetVec(parentNets, V3NetUD));
    _handler->_latchMap = &(pNtk->_latchMap);
-   _handler->_decDep = _decompDepth;
+   if(_decompDepth >1) _handler->_decDep = _decompDepth;
    v3Handler.pushAndSetCurHandler(_handler);
-   printNetlist(pNtk->getNtk());
+   //printNetlist(pNtk->getNtk());
 
-   for (unsigned i = 0; i < 3; ++i){
+   /*for (unsigned i = 0; i < 3; ++i){
       for (unsigned j = 0; j < 6; ++j){
           cout << _handler->_latchMap->at(i)[j].id << ":" << _handler->_latchMap->at(i)[j].cp << endl;
       }
-   }
+   }*/
    _pdrGen = new V3AlgAigGeneralize(_handler); assert (_pdrGen);
    _pdrSim = dynamic_cast<V3AlgAigSimulate*>(_pdrGen); assert (_pdrSim);
    V3NetVec simTargets(1, _vrfNtk->getOutput(p)); _pdrSim->reset2(simTargets);
@@ -60,7 +60,7 @@ V3SVrfIPDR::startVerify2(const uint32_t& p) {
    assert (p < _result.size()); assert (p < _vrfNtk->getOutputSize());
    const V3NetId& pId = _vrfNtk->getOutput(p); assert (V3NetUD != pId);
    //cout << "outputId: " << pId.id << endl;
-   cout << "netSize: " << _vrfNtk->getNetSize() << endl;
+   //cout << "netSize: " << _vrfNtk->getNetSize() << endl;
    _pdrSize = _vrfNtk->getInputSize() + _vrfNtk->getInoutSize();
 
 
@@ -273,7 +273,7 @@ V3SVrfIPDR::recursiveBlockCube2(V3SIPDRCube* const badCube) {
                }
                badQueue.add(baseCube.first - d, generalizedCube.second);  // This Cube should be blocked in previous frame
                badQueue.add(baseCube.first, baseCube.second);  // This Cube has not yet been blocked (postpone to future)
-               cout << "WOW" << endl;
+               //cout << "WOW" << endl;
                continue;
             }
          }
@@ -351,10 +351,10 @@ V3SVrfIPDR::checkReachability2(const uint32_t& frame, const V3NetVec& cubeState,
     }
     else {
      if (profileON()) _solveStat->start();
-     V3SSvrMiniSat * GG = (V3SSvrMiniSat *)_pdrSvr[d];
+     /*V3SSvrMiniSat * GG = (V3SSvrMiniSat *)_pdrSvr[d];
      for (unsigned i = 0, s = GG->_assump.size(); i < s; ++i){
         cout << var(GG->_assump[i]) << ":" << sign(GG->_assump[i]) << endl;
-     }
+     }*/
      _pdrSvr[d]->simplify();
      const bool result = _pdrSvr[d]->assump_solve();
      if (profileON()) _solveStat->end();
@@ -379,7 +379,26 @@ V3SVrfIPDR::extractModel2(const uint32_t& d, const V3SIPDRCube* const nextCube) 
    V3SIPDRCube* const cube = new V3SIPDRCube(nextCube);  // Create Cube
    generalizeSimulation2(d, cube, nextCube);  // Apply Simulation for the witness
    // Record Input to Proof Obligation for Trace Logging
-   if (_pdrSize) recordCubeInputForTraceLog(cube); return cube;
+   if (_pdrSize) recordCubeInputForTraceLog2(cube); return cube;
+}
+
+void
+V3SVrfIPDR::recordCubeInputForTraceLog2(V3SIPDRCube* const& cube) {
+   //to find the right input trace... TBD....
+   assert (cube); assert (_pdrSim);
+   V3BitVecX value(_pdrSize), tempValue;
+   uint32_t j = 0;
+   for (uint32_t i = 0; i < _vrfNtk->getInputSize(); ++i, ++j) {
+      tempValue = _pdrSim->getSimValue(_vrfNtk->getInput(i));
+      if ('1' == tempValue[0]) value.set1(j);
+      else if ('0' == tempValue[0]) value.set0(j);
+   }
+   for (uint32_t i = 0; i < _vrfNtk->getInoutSize(); ++i, ++j) {
+      tempValue = _pdrSim->getSimValue(_vrfNtk->getInout(i));
+      if ('1' == tempValue[0]) value.set1(j);
+      else if ('0' == tempValue[0]) value.set0(j);
+   }
+   assert (j == value.size()); cube->setInputData(value);
 }
 
 void

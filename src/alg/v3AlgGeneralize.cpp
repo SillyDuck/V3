@@ -532,6 +532,7 @@ V3AlgAigGeneralize::performFixForControlVars(const bool& parallelSim) {
 // Generalization Heuristics
 void
 V3AlgAigGeneralize::performXPropForExtensibleVars(const V3UI32Vec& generalizeOrder, const bool& tem) {
+   //cerr << "performXPropForExtensibleVars" << endl;
    V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
    if (!_undecided.size() || !generalizeOrder.size()) return;
    // Mark Fanin Cone from Targets
@@ -915,10 +916,13 @@ V3AlgAigGeneralize::generalizationValid() {
    // Set Sources
    setSourceFree(V3_FF, false);
    V3NetList::const_iterator it = _genResult.begin();
+   //cerr << "_genResult: ";
    while (it != _genResult.end()) {
+      //cerr << (*it).id << ":" << (*it).cp << "    ";
       if ((*it).cp) _simValue[ntk->getLatch((*it).id).id].set0(0);
       else _simValue[ntk->getLatch((*it).id).id].set1(0); ++it;
    }
+   //cerr  << endl;
    simulate();
    /*for (uint32_t i = 0; i < _targetId.size(); ++i){
       cerr << "_targetId[i].id" << _targetId[i].id << " : " << _targetId[i].cp << ":";

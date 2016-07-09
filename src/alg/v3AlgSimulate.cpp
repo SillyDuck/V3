@@ -117,11 +117,15 @@ void
 V3AlgAigSimulate::simulate() {
    const V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
    // Perform Combinational Simulation
+   //cerr << "simulating..." << endl;
    V3NetId id1, id2;
    for (uint32_t i = (_cycle ? _init[1] : _init[0]); i < _orderMap.size(); ++i) {
       assert (AIG_NODE == ntk->getGateType(_orderMap[i]));
       id1 = ntk->getInputNetId(_orderMap[i], 0); id2 = ntk->getInputNetId(_orderMap[i], 1);
       _simValue[_orderMap[i].id].bv_and(_simValue[id1.id], id1.cp, _simValue[id2.id], id2.cp);
+     /* cerr << "_orderMap[i] : " << _orderMap[i].id << ", in1 : " << id1.id << ", in2 : " << id2.id ;
+      cerr << "value : " << _simValue[_orderMap[i].id][0] << " = "  << _simValue[id1.id][0] << " & "
+         << _simValue[id2.id][0]  << endl;*/
    }
    // Record DFF Next State Value
    const uint32_t index = (_cycle) ? 0 : 1; ++_cycle;

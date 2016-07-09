@@ -36,6 +36,7 @@ V3NtkHandler::V3NtkHandler(V3NtkHandler* const p, V3Ntk* const ntk) : _handler(p
    if (_handler) _handler->incRefCount(); _ntk = ntk;
    _fsm.clear(); _property.clear(); _ntkName = "";
    _nameHash.clear(); _netHash.clear(); _instRef = 0; _refCount = 0;
+   _decDep = 0;
 }
 
 V3NtkHandler::~V3NtkHandler() {

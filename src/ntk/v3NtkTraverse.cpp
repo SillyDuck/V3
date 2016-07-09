@@ -54,9 +54,11 @@ void computeFanout(V3Ntk* const ntk, V3NetTable& outputTable, const V3NetVec& ta
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) m[ntk->getLatch(i).id] = true;
    for (uint32_t i = 0; i < ntk->getConstSize(); ++i) m[ntk->getConst(i).id] = true;
    // DFS Compute Fanout List From (Pseudo) PO / PIO
+   V3NtkHandler* _handler =  v3Handler.getCurHandler();
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) {
       dfsComputeFanout(ntk, ntk->getInputNetId(ntk->getLatch(i), 0), m, outputTable);
       dfsComputeFanout(ntk, ntk->getInputNetId(ntk->getLatch(i), 1), m, outputTable);
+      if(_handler->_decDep)dfsComputeFanout(ntk, _handler->_latchMap->at( _handler->_decDep)[i], m, outputTable);
    }
    for (uint32_t i = 0; i < ntk->getInoutSize(); ++i)
       dfsComputeFanout(ntk, ntk->getInputNetId(ntk->getInout(i), 0), m, outputTable);
@@ -107,12 +109,23 @@ const uint32_t computeLevel(V3Ntk* const ntk, V3UI32Vec& levelData, const V3NetV
    dfsNtkForGeneralOrder(ntk, orderMap, targetNets);
    // Compute Net Levels
    dfsComputeLevel(ntk, orderMap, levelData);
+   /*for (uint32_t i = 0 ; i < 27; ++i){
+      cerr << id.id << "-" << levelData[id.id] << endl;
+   }*/
    // Update Global Level
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) {
       id = ntk->getInputNetId(ntk->getLatch(i), 0); assert (V3NtkUD != levelData[id.id]);
       if (levelData[id.id] > levelSize) levelSize = levelData[id.id];
       id = ntk->getInputNetId(ntk->getLatch(i), 1); assert (V3NtkUD != levelData[id.id]);
       if (levelData[id.id] > levelSize) levelSize = levelData[id.id];
+   }
+   V3NtkHandler* _handler =  v3Handler.getCurHandler();
+   if(_handler->_decDep){
+      for (uint32_t i = 0; i < ntk->getLatchSize(); ++i){
+         id = _handler->_latchMap->at( _handler->_decDep)[i];
+         assert (V3NtkUD != levelData[id.id]);
+         if (levelData[id.id] > levelSize) levelSize = levelData[id.id];
+      }
    }
    for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) {
       id = ntk->getInputNetId(ntk->getInout(i), 0); assert (V3NtkUD != levelData[id.id]);
@@ -288,6 +301,11 @@ const uint32_t dfsNtkForGeneralOrder(V3Ntk* const ntk, V3NetVec& orderMap, const
       dfsGeneralOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 0), m, orderMap);
    for (uint32_t i = 0; i < ntk->getInoutSize(); ++i) // usually 0 inout here
       dfsGeneralOrder(ntk, ntk->getInputNetId(ntk->getInout(i), 0), m, orderMap);
+   V3NtkHandler* _handler =  v3Handler.getCurHandler();
+   if(_handler->_decDep){
+      for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
+         dfsGeneralOrder(ntk, _handler->_latchMap->at( _handler->_decDep)[i], m, orderMap);
+   }
    if (targetNets.size())
       for (uint32_t i = 0; i < targetNets.size(); ++i) dfsGeneralOrder(ntk, targetNets[i], m, orderMap);
    else{
@@ -335,7 +353,6 @@ const uint32_t dfsNtkForSimulationOrder(V3Ntk* const ntk, V3NetVec& orderMap, co
 const uint32_t dfsNtkForSimulationOrder2(V3Ntk* const ntk, V3NetVec& orderMap, const V3NetVec& targetNets, const bool& allNets) {
    assert (ntk); V3BoolVec m(ntk->getNetSize(), false);
    orderMap.clear(); orderMap.reserve(ntk->getNetSize());
-   V3NtkHandler* _handler =  v3Handler.getCurHandler();
    // Constants
    for (uint32_t i = 0; i < ntk->getConstSize(); ++i) orderMap.push_back(ntk->getConst(i));
    // (Pseudo) Primary Inputs
@@ -351,6 +368,7 @@ const uint32_t dfsNtkForSimulationOrder2(V3Ntk* const ntk, V3NetVec& orderMap, c
    // (Pseudo) Primary Output Fanin Logics
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
       dfsSimulationOrder(ntk, ntk->getInputNetId(ntk->getLatch(i), 0), m, orderMap);
+   V3NtkHandler* _handler =  v3Handler.getCurHandler();
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i)
       dfsSimulationOrder(ntk, _handler->_latchMap->at( _handler->_decDep)[i], m, orderMap);
    if (targetNets.size())

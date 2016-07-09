@@ -7,6 +7,7 @@
 ****************************************************************************/
 #define heavy_debug 0
 #define frame_info 0
+#define BLOCK_INIT 1
 
 #ifndef V3S_VRF_IPDR_C
 #define V3S_VRF_IPDR_C
@@ -201,8 +202,8 @@ isIncContinueOnLastSolver(): Valid only if isIncKeepLastReachability() is true.
 
 void
 V3SVrfIPDR::startVerify(const uint32_t& p) {
-   /*startVerify2(p);
-   return;*/
+//   startVerify2(p);
+//   return;
    // Initialize Parameters
    uint32_t proved = V3NtkUD, fired = V3NtkUD;
    struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
@@ -213,8 +214,10 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
 
    // Start BMC Based Verification
    V3Ntk* simpNtk = 0; V3SvrBase* solver = 0;
-   while (boundDepth <= _decompDepth) {
+   while (boundDepth <= 1000) {
       // Check Time Bounds
+      gettimeofday(&curtime, NULL);
+      if (1 < getTimeUsed(inittime, curtime)) break;
       boundDepth += 1;
 
       // Expand Network and Set Initial States
@@ -242,8 +245,8 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       if (solver->assump_solve()) { fired2 = boundDepth; break; }
       solver->assertProperty(simpNtk->getOutput(0), true, 0);
 
-      if (!endLineON()) Msg(MSG_IFO) << "\r" + flushSpace + "\r";
-      Msg(MSG_IFO) << "Verification completed under depth = "  << boundDepth << endl;
+      //if (!endLineON()) Msg(MSG_IFO) << "\r" + flushSpace + "\r";
+      cerr << "Verification completed under depth = "  << boundDepth << endl;
 
       if (V3NtkUD != fired2) break; delete solver; delete simpNtk;
 
@@ -252,10 +255,6 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       //Msg(MSG_IFO) << "Counter-example found at depth = " << fired2;
       fired = fired2 -1;
       if (!isIncKeepSilent() && reportON()) {
-         if (intactON()) {
-            if (endLineON()) Msg(MSG_IFO) << endl;
-            else Msg(MSG_IFO) << "\r" << flushSpace << "\r";
-         }
          if (V3NtkUD != proved) Msg(MSG_IFO) << "Inductive Invariant found at depth = " << ++proved;
          else if (V3NtkUD != fired) Msg(MSG_IFO) << "Counter-example found at depth = " << ++fired;
          else Msg(MSG_IFO) << "UNDECIDED at depth = " << _maxDepth;
@@ -344,7 +343,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    }
 
    if(_tem_decomp == false) _decompDepth = 1;
-
+   _decompDepth = boundDepth;
    // set FFs to be constant
    cerr << "Original Circuit Latch Size : " << _vrfNtk->getLatchSize() << endl;
    V3NtkTemDecomp* const pNtk = new V3NtkTemDecomp(_handler, 1 , transient_signals , false); assert (pNtk);
@@ -650,15 +649,10 @@ V3SVrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
       _pdrSvr.push_back(d ? referenceSolver(_pdrSvr[0]) : allocSolver(getSolver(), _vrfNtk));
       assert (_pdrSvr[d]->totalSolves() == 0);
 
-      if(false){
-         for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i)
-            _pdrSvr[d]->addBoundedVerifyData(_vrfNtk->getLatch(i), 0);
-         _pdrSvr[d]->addBoundedVerifyData(_pdrBad->getState()[0], 0);
-      }else{
-         for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i)
-            _pdrSvr[d]->addBoundedVerifyDataTem(_vrfNtk->getLatch(i), 0);
-         _pdrSvr[d]->addBoundedVerifyDataTem(_pdrBad->getState()[0], 0);
-      }
+      for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i)
+         _pdrSvr[d]->addBoundedVerifyDataTem(_vrfNtk->getLatch(i), 0);
+      _pdrSvr[d]->addBoundedVerifyDataTem(_pdrBad->getState()[0], 0);
+
 
       if (d != getPDRDepth()) _pdrSvr[d]->assertProperty(_pdrBad->getState()[0], true, 0);
 
@@ -899,7 +893,7 @@ const bool
 V3SVrfIPDR::existInitial(const V3NetVec& cubeState) {
    // checkReachability frame : 0 cube : state
    //cerr << "\ncheckexistInitial , cube : "; printState(cubeState);
-   if(true){
+   if(BLOCK_INIT){
       bool tmpBool = true;
       for (uint32_t i = 0; i < cubeState.size(); ++i) {
          assert (cubeState[i].id < _pdrInitValue.size());
@@ -1231,7 +1225,6 @@ V3SVrfIPDR::reportUnsupportedInitialState() {
 // PDR Debug Functions
 void
 V3SVrfIPDR::printState(const V3NetVec& state) const {
-   cerr << "printState : ";
    for (uint32_t i = 0; i < state.size(); ++i)
       cerr << (state[i].cp ? "~" : "") << state[i].id << " ";
    cerr << endl;
