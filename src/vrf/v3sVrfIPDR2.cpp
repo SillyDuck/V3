@@ -132,6 +132,10 @@ V3SVrfIPDR::startVerify2(const uint32_t& p) {
 
    // Report Verification Result
    if (!isIncKeepSilent() && reportON()) {
+      uint32_t c_size = 0;
+      for (uint32_t i = 0; i < _pdrFrame.size(); ++i)
+         c_size += _pdrFrame[i]->getCubeList().size();
+      cout << "CubeSize : " << c_size << endl;
       if (intactON()) {
          if (endLineON()) Msg(MSG_IFO) << endl;
          else Msg(MSG_IFO) << "\r" << flushSpace << "\r";
@@ -232,9 +236,15 @@ V3SVrfIPDR::recursiveBlockCube2(V3SIPDRCube* const badCube) {
    // Create a Queue for Blocking Cubes
    V3BucketList<V3SIPDRCube*> badQueue(getPDRFrame());
    assert (badCube); badQueue.add(getPDRDepth(), badCube);
+
+   vector<uint32_t> v;
+   for (unsigned i = 0; i <= getPDRDepth(); ++i){
+     v.push_back(0);
+   }
    // Block Cubes from the Queue
    V3SIPDRTimedCube baseCube, generalizedCube;
    while (badQueue.pop(baseCube.first, baseCube.second)) {
+      v[baseCube.first]++;
       if(heavy_debug){
          cerr << "\nPoped: baseCube frame: " << baseCube.first <<  ", cube: ";
          printState( baseCube.second->getState() );
@@ -257,7 +267,7 @@ V3SVrfIPDR::recursiveBlockCube2(V3SIPDRCube* const badCube) {
          assert (!existInitial2(baseCube.second->getState()));
          // Check Reachability : SAT (R ^ ~cube ^ T ^ cube')
 
-         if( baseCube.first >= d ){
+         if( baseCube.first >= d && v[baseCube.first] > 10){
          //if( false ){
             if(checkReachability2(baseCube.first - d + 1, baseCube.second->getState(),false)){
                if(heavy_debug){

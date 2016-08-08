@@ -7,7 +7,9 @@
 ****************************************************************************/
 #define heavy_debug 0
 #define frame_info 0
-#define BLOCK_INIT 1
+#define BLOCK_INIT 0
+#define FWDRC 0
+#define TEMDEC 0
 
 #ifndef V3S_VRF_IPDR_C
 #define V3S_VRF_IPDR_C
@@ -145,7 +147,6 @@ V3SIPDRFrame::removeSelfSubsumed() {
 \* -------------------------------------------------- */
 // Constructor and Destructor
 V3SVrfIPDR::V3SVrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
-   _sim_then_add_cube = false;
    //_tem_decomp = false;
    // Private Data Members
    _pdrFrame.clear(); _pdrBad = 0; _pdrSize = 0;
@@ -202,16 +203,16 @@ isIncContinueOnLastSolver(): Valid only if isIncKeepLastReachability() is true.
 
 void
 V3SVrfIPDR::startVerify(const uint32_t& p) {
-//   startVerify2(p);
-//   return;
+   startVerify2(p);
+   return;
    // Initialize Parameters
    uint32_t proved = V3NtkUD, fired = V3NtkUD;
    struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
-   clearResult(p); if (profileON()) _totalStat->start(); assert (!_constr.size());
+   clearResult(p); assert (!_constr.size());
    const string flushSpace = string(100, ' ');
    uint32_t fired2 = V3NtkUD;
    uint32_t boundDepth = 0;
-
+   if (profileON()) _totalStat->start(); 
    // Start BMC Based Verification
    V3Ntk* simpNtk = 0; V3SvrBase* solver = 0;
    while (boundDepth <= _decompDepth) {
@@ -253,6 +254,7 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       //Msg(MSG_IFO) << "Counter-example found at depth = " << fired2;
       fired = fired2 -1;
       if (!isIncKeepSilent() && reportON()) {
+         cout << "CubeSize : 0"<< endl;
          if (V3NtkUD != proved) Msg(MSG_IFO) << "Inductive Invariant found at depth = " << ++proved;
          else if (V3NtkUD != fired) Msg(MSG_IFO) << "Counter-example found at depth = " << ++fired;
          else Msg(MSG_IFO) << "UNDECIDED at depth = " << _maxDepth;
@@ -276,25 +278,27 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    setEndline(true);
    _maxTime = 900;
    // Clear Verification Results
-   
+
 
    bool verbose = false;
 
    uint32_t simDepth = 30;
+   uint32_t nx = 100;
    V3AlgAigSimulate* _temSim = new V3AlgAigSimulate(_handler);
    vector<V3BitVecX> history;
    int first = -2;
    // TODO turn off this
-   if(false){
-      _temFrames.push_back(new V3SIPDRFrame());
-      for (unsigned i = 0; i < simDepth; ++i){
-         _temFrames.push_back(new V3SIPDRFrame());
-      }
+   if(TEMDEC){
+      //_temFrames.push_back(new V3SIPDRFrame());
+      // for (unsigned i = 0; i < simDepth; ++i){
+      //    _temFrames.push_back(new V3SIPDRFrame());
+      // }
       V3BitVecX value;
       value.resize(1);
       value.setX(0);
       assert(_vrfNtk->getInoutSize() == 0);
-      for (uint32_t j = 0; j < simDepth; ++j) {
+      //for (uint32_t j = 0; j < simDepth; ++j) {
+      while(nx != 0 && first == -2 && history.size() < 100){
          V3BitVecX v_dff(_vrfNtk->getLatchSize());
          _temSim->updateNextStateValue();
          for (uint32_t i = 0; i < _vrfNtk->getInputSize(); ++i) {
@@ -303,48 +307,53 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
          }
 
          _temSim->simulate();
-         _temSim->getStateBV(v_dff,verbose);
+         _temSim->getStateBV(v_dff,false, nx);
          for (uint32_t ii = 0; ii < history.size(); ++ii){
             if((history[ii] == v_dff) && (first == -2)) first = ii;
          }
          history.push_back(v_dff);
       }
-      for (uint32_t j = 0; j < 31; ++j) {
-         //cout << _temFrames[j]->getCubeList().size() << " ";
-      }
-      //cout << endl;
    }
-   //_decompDepth = first + 2;
+
    //_decompDepth = 3;
 
    V3BitVecX transient_signals(_vrfNtk->getLatchSize());
-   //if(first != -2 ){
+   nx = 0;
+   //if(first != -2){
    if(false){
       for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
          if(history[first][i] == '0'){
             bool aaa = true;
-            for (unsigned k = first; k < simDepth; ++k){
+            for (unsigned k = first; k < history.size(); ++k){
                 aaa &= (history[k][i] == '0');
             }
-            if(aaa)
+            if(aaa){
                transient_signals.set0(i);
+               nx++;
+            }
          }
          else if(history[first][i] == '1'){
             bool aaa = true;
-            for (unsigned k = first; k < simDepth; ++k){
+            for (unsigned k = first; k < history.size(); ++k){
                 aaa &= (history[k][i] == '1');
             }
-            if(aaa)
+            if(aaa){
                transient_signals.set1(i);
+               nx++;
+            }
          }
       }
    }
-
+   //cout << "\nNon-Xratio : " << nx << " " << _vrfNtk->getLatchSize() << endl;
+   //cout << "MaxTransientDuration : " << first+2 << endl;
+   //return;
    if(_tem_decomp == false) _decompDepth = 1;
-
+   //_decompDepth = first + 2;
    // set FFs to be constant
    cerr << "Original Circuit Latch Size : " << _vrfNtk->getLatchSize() << endl;
+   //printNetlist(_vrfNtk);
    V3NtkTemDecomp* const pNtk = new V3NtkTemDecomp(_handler, 1 , transient_signals , false); assert (pNtk);
+   //printNetlist(pNtk->getNtk());
    _handler->_ntk = pNtk->getNtk();
    V3NtkHandler::setStrash(true);
    V3NtkHandler::setReduce(true);
@@ -407,37 +416,6 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    cerr <<"Solver initialized, Now Simulating and adding TemFrames\n";
    uint32_t count1 = 0;
    uint32_t count2 = 0;
-   if(_sim_then_add_cube) {
-      for (uint32_t j = 0; j < simDepth; ++j) {
-         for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
-            V3SIPDRCube* tmpCube = new V3SIPDRCube(0);
-            V3NetVec tmpVec;
-            if(history[j][i] == '0'){
-               bool aaa = true;
-               for (unsigned k = 0; k < j; ++k){
-                   aaa &= (history[k][i] == '0');
-               }
-               tmpVec.push_back(V3NetId::makeNetId(i,0));
-               if( aaa && !existInitial(tmpVec) ){ // the cube should be extract later
-                  tmpCube->setState(tmpVec);
-
-                  _temFrames[j+1]->pushCube( tmpCube );
-               }
-            }
-            else if(history[j][i] == '1'){
-               bool aaa = true;
-               for (unsigned k = 0; k < j; ++k){
-                   aaa &= (history[k][i] == '1');
-               }
-               tmpVec.push_back(V3NetId::makeNetId(i,1));
-               if( aaa && !existInitial(tmpVec) ){
-                  tmpCube->setState(tmpVec);
-                  _temFrames[j+1]->pushCube( tmpCube );
-               }
-            }
-         }
-      }
-   }
    cerr <<"Simulation done, Start Verification\n";
 
 
@@ -472,11 +450,52 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
          // Push New Frame
          _pdrFrame.push_back(new V3SIPDRFrame());
          initializeSolver(getPDRDepth()); addLastFrameInfoToSolvers();
-         if(_sim_then_add_cube){
+         assert (_pdrSvr.back()); assert (_pdrSvr.size() == _pdrFrame.size());
+
+         if (propagateCubes()) {
+
+            for (unsigned i = 1; i < _pdrFrame.size(); ++i){
+                const V3SIPDRCubeList& cubeList = _pdrFrame[i]->getCubeList();
+                for (V3SIPDRCubeList::const_reverse_iterator it = cubeList.rbegin(); it != cubeList.rend(); ++it) {
+                  /*const V3NetVec& state = (*it)->getState();
+                  cout << "Frame " << i << " : ";
+                  printState(state);
+                  cout << endl;*/
+                }
+            }
+
+            proved = getPDRDepth(); break;
+         }
+         if(FWDRC){
             uint32_t dd = getPDRDepth();
             if( dd <= simDepth ){
+               for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
+                  V3SIPDRCube* tmpCube = new V3SIPDRCube(0);
+                  V3NetVec tmpVec;
+                  if(history[dd-1][i] == '0'){
+                     bool aaa = true;
+                     for (unsigned k = 0; k < dd-1; ++k){
+                         aaa &= (history[k][i] == '0');
+                     }
+                     tmpVec.push_back(V3NetId::makeNetId(i,0));
+                     if( aaa && !existInitial(tmpVec) ){ // the cube should be extract later
+                        tmpCube->setState(tmpVec);
+                        _temFrames[dd]->pushCube( tmpCube );
+                     }
+                  }
+                  else if(history[dd-1][i] == '1'){
+                     bool aaa = true;
+                     for (unsigned k = 0; k < dd-1; ++k){
+                         aaa &= (history[k][i] == '1');
+                     }
+                     tmpVec.push_back(V3NetId::makeNetId(i,1));
+                     if( aaa && !existInitial(tmpVec) ){
+                        tmpCube->setState(tmpVec);
+                        _temFrames[dd]->pushCube( tmpCube );
+                     }
+                  }
+               }
                const V3SIPDRCubeList& cubeList = _temFrames[dd]->getCubeList(); 
-               //cout << "cubeList.size() : " << cubeList.size() << endl;
                if (cubeList.size()){
                //if (false){
                   V3SvrDataVec formula; formula.clear(); size_t fId;
@@ -495,23 +514,6 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
             }
          }
 
-         assert (_pdrSvr.back()); assert (_pdrSvr.size() == _pdrFrame.size());
-
-         if (propagateCubes()) {
-
-            for (unsigned i = 1; i < _pdrFrame.size(); ++i){
-                const V3SIPDRCubeList& cubeList = _pdrFrame[i]->getCubeList();
-                for (V3SIPDRCubeList::const_reverse_iterator it = cubeList.rbegin(); it != cubeList.rend(); ++it) {
-                  /*const V3NetVec& state = (*it)->getState();
-                  cout << "Frame " << i << " : ";
-                  printState(state);
-                  cout << endl;*/
-                }
-            }
-
-            proved = getPDRDepth(); break;
-         }
-
       }
       else {
          //cout << "Found Bad Cube\n";
@@ -525,13 +527,18 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
             const uint32_t j = (_pdrFrame.size() > 25) ? _pdrFrame.size() - 25 : 0; if (j) Msg(MSG_IFO) << " ...";
             for (uint32_t i = j; i < _pdrFrame.size(); ++i)
                Msg(MSG_IFO) << " " << _pdrFrame[i]->getCubeList().size();
-            if (endLineON()) Msg(MSG_IFO) << endl; else Msg(MSG_IFO) << flush;
+            Msg(MSG_IFO) << endl;
+            //if (endLineON()) Msg(MSG_IFO) << endl; else Msg(MSG_IFO) << flush;
          }
       }
    }
 
    // Report Verification Result
    if (!isIncKeepSilent() && reportON()) {
+      uint32_t c_size = 0;
+      for (uint32_t i = 0; i < _pdrFrame.size(); ++i)
+         c_size += _pdrFrame[i]->getCubeList().size();
+      cout << "CubeSize : " << c_size << endl;
       if (V3NtkUD != proved) Msg(MSG_IFO) << "Inductive Invariant found at depth = " << ++proved;
       else if (V3NtkUD != fired) Msg(MSG_IFO) << "Counter-example found at depth = " << ++fired;
       else Msg(MSG_IFO) << "UNDECIDED at depth = " << _maxDepth;

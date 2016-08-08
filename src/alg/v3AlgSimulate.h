@@ -43,7 +43,7 @@ class V3AlgSimulate
       // Simulation Output Functions
       virtual void printResult() const;
       virtual void printHowManyX(int&, int&);
-      virtual void getStateBV(V3BitVecX & data, bool);
+      virtual void getStateBV(V3BitVecX & data, bool, uint32_t&);
    protected : 
       // Simulation Private Helper Function
       void resetSimulator();
@@ -89,7 +89,7 @@ class V3AlgAigSimulate : public V3AlgSimulate
       // Simulation Output Functions
       void printResult() const;
       void printHowManyX(int&, int&);
-      void getStateBV(V3BitVecX & data, bool);
+      void getStateBV(V3BitVecX & data, bool, uint32_t&);
    //protected : 
       // Private Event-Driven Simulation Functions
       void simulateEventList();

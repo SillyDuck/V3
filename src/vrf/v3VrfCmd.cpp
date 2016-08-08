@@ -1078,8 +1078,8 @@ V3PDRVrfCmd::exec(const string& option) {
          cout << "Running Simplified PDR\n";
          simp = true;
       }
-      else if (v3StrNCmp("-FWDRR", token, 6) == 0) {
-         cout << "Turned On Foward Reachability Restriction\n";
+      else if (v3StrNCmp("-FWDRC", token, 6) == 0) {
+         cout << "Turned On Foward Reachability Constraint\n";
          frr = true;
       }
       /*else if (v3StrNCmp("-TEMDEC", token, 2) == 0) {
@@ -1114,7 +1114,6 @@ V3PDRVrfCmd::exec(const string& option) {
             if(simp){
                V3SVrfIPDR* const checker = new V3SVrfIPDR(pNtk); assert (checker);
                if (maxD) checker->setMaxDepth(maxDepth);
-               if (frr) checker->_sim_then_add_cube = true;
                if (temdec){ checker->_tem_decomp = true;
                   checker->_decompDepth = temDepth;
                }

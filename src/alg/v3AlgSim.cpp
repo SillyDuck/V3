@@ -36,11 +36,12 @@ const bool performTemporalSim(const V3NtkHandler* const handler, bool verbose){
    assert(ntk->getInoutSize() == 0);
    V3BitVecS z;
    z.setZeros(-1);
+   uint32_t xd;
    for (uint32_t j = 0; j < 30; ++j) {
       //do { getline(input, valueStr); assert (!input.eof()); } while (!valueStr.size());
       //assert (patternSize == valueStr.size());
       V3BitVecX v_dff(ntk->getLatchSize());
-      simHandler->updateNextStateValue(); // all FF are 0 in the beginning
+      simHandler->updateNextStateValue(); // m FF are 0 in the beginning
       for (uint32_t i = 0; i < ntk->getInputSize(); ++i) {
          assert ( ntk->getNetWidth(ntk->getInput(i)) == 1);
          simHandler->setSource(ntk->getInput(i), value);
@@ -48,7 +49,7 @@ const bool performTemporalSim(const V3NtkHandler* const handler, bool verbose){
 
       simHandler->simulate();
 
-      simHandler->getStateBV(v_dff,verbose);
+      simHandler->getStateBV(v_dff,verbose,xd);
       for (ii = 0; ii < history.size(); ++ii){
          if(history[ii] == v_dff) goto end;
       }

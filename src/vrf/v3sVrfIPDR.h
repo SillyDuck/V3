@@ -185,7 +185,6 @@ class V3SVrfIPDR : public V3VrfBase
       // Data Members for Temporal Decompostition
       V3SIPDRFrameVec   _temFrames;
       V3NtkTemDecomp*   _finalNtk;
-      bool             _sim_then_add_cube;
       bool             _tem_decomp;
 };
 

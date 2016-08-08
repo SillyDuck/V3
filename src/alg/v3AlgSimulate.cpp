@@ -34,7 +34,7 @@ void
 V3AlgSimulate::printHowManyX(int& x, int& nx){}
 
 void
-V3AlgSimulate::getStateBV(V3BitVecX & data, bool verbose){}
+V3AlgSimulate::getStateBV(V3BitVecX & data, bool verbose, uint32_t & xd){}
 
 void
 V3AlgSimulate::reset(const V3NetVec& targetNets) { resetSimulator(); }
@@ -136,7 +136,7 @@ V3AlgAigSimulate::simulate() {
 }
 
 void
-V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
+V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose, uint32_t & nx){
 
    const V3Ntk* const ntk = _handler->getNtk(); assert (ntk);
    V3BitVecS xxx;
@@ -144,9 +144,9 @@ V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
    one.setOnes(-1);
    V3BitVecS z;
    z.setZeros(-1);
-   int x=0, nx = 0;
+   uint32_t x=0; nx=0;
    for (uint32_t i = 0; i < ntk->getLatchSize(); ++i) {
-      if(verbose && ntk->getLatchSize() < 80){
+      if(verbose && ntk->getLatchSize() < 300){
          if( _dffValue[i] == xxx ) cout << "X";
          else if( _dffValue[i] == one ) cout << "1";
          else if( _dffValue[i] == z ) cout << "0";
@@ -162,8 +162,8 @@ V3AlgAigSimulate::getStateBV(V3BitVecX & data, bool verbose){
       else if( _dffValue[i] == z ) data.set0(i);
       else cout << "?";
    }
-   //if(!verbose) cout << "X ratio: " << x <<"/" << nx;
-   if(verbose && ntk->getLatchSize() < 80) cout <<endl;
+   //cout << endl  << "X ratio: " << x <<"/" << nx;
+   if(verbose && ntk->getLatchSize() < 300) cout <<endl;
 }
 
 

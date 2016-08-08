@@ -45,7 +45,7 @@ void dfsComputeFanout(V3Ntk* const ntk, const V3NetId& pId, V3BoolVec& m, V3NetT
 
 void computeFanout(V3Ntk* const ntk, V3NetTable& outputTable, const V3NetVec& targetNets) {
    assert (ntk); outputTable.clear(); outputTable.reserve(ntk->getNetSize());
-   if (targetNets.size()) for (uint32_t i = 0; i < targetNets.size(); ++i) cout << targetNets[i].id << endl;
+   //if (targetNets.size()) for (uint32_t i = 0; i < targetNets.size(); ++i) cout << targetNets[i].id << endl;
    for (uint32_t i = 0; i < ntk->getNetSize(); ++i) outputTable.push_back(V3NetVec());
    V3BoolVec m(ntk->getNetSize(), false);
    // Set Latest Misc Data on (Pseudo) PI / PIO / Const
