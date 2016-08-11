@@ -19,6 +19,8 @@ change SIMP_LATCH to 1 in src/vrf/v3sVrfIPDR.cpp
 For the benchMarks:
 ///////////////////
 
+git clone https://github.com/SillyDuck/data_backup.git
+
 1. mkdir benchMarks
 2. cd benchMarks
 3. cp /home/SillyDuck/benchMarks/testcase/* ./
