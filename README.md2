@@ -1,8 +1,39 @@
+////////////////
+For the program:
+////////////////
+
+to get the code:
+
+git clone https://github.com/SillyDuck/V3.git
+
 the file "f" is the time-shifted PDR command sample
 the file "f2" is the Multi-Step PDR command sample
 
+"./v3 -f f" will demonstrate the result
 
-"./v3 -f f" will print the result
+for the simp-latch version time-shift PDR,
+change SIMP_LATCH to 1 in src/vrf/v3sVrfIPDR.cpp
 
+
+///////////////////
+For the benchMarks:
+///////////////////
+
+1. mkdir benchMarks
+2. cd benchMarks
+3. cp /home/SillyDuck/benchMarks/testcase/* ./
+
+take FWDRC for example,
+
+4. cd FWDRC
+5. copy the newest compiled v3 here (no need to change if u didn't adjust the code)
+6. python run.py <caseList>
+
+(u may need adjust run.py for each different output message format if u adjusted the code,
+but run.py is very simple and straightforward)
+
+the SCRIPTNAME.result collected the result
+
+the t.py and q.py can do statistics if needed
 
 
