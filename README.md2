@@ -1,0 +1,8 @@
+the file "f" is the time-shifted PDR command sample
+the file "f2" is the Multi-Step PDR command sample
+
+
+"./v3 -f f" will print the result
+
+
+

@@ -59,8 +59,7 @@ V3SVrfIPDR::startVerify2(const uint32_t& p) {
    // Initialize Pattern Input Size
    assert (p < _result.size()); assert (p < _vrfNtk->getOutputSize());
    const V3NetId& pId = _vrfNtk->getOutput(p); assert (V3NetUD != pId);
-   //cout << "outputId: " << pId.id << endl;
-   //cout << "netSize: " << _vrfNtk->getNetSize() << endl;
+
    _pdrSize = _vrfNtk->getInputSize() + _vrfNtk->getInoutSize();
 
 

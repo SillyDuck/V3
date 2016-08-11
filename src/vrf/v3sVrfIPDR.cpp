@@ -9,7 +9,8 @@
 #define frame_info 0
 #define BLOCK_INIT 0
 #define FWDRC 0
-#define TEMDEC 0
+#define TEMDEC 1
+#define SIMP_LATCH 0
 
 #ifndef V3S_VRF_IPDR_C
 #define V3S_VRF_IPDR_C
@@ -158,6 +159,7 @@ V3SVrfIPDR::V3SVrfIPDR(const V3NtkHandler* const handler) : V3VrfBase(handler) {
    // Extended Data Members
    _pdrPriority.clear();
    _decompDepth = 1;
+   _mult = false;
    // Statistics
    setProfile(true);
    if (profileON()) {
@@ -201,21 +203,16 @@ isIncKeepLastReachability(): If the last result is unsat, put the inductive inva
 isIncContinueOnLastSolver(): Valid only if isIncKeepLastReachability() is true.
 \* ---------------------------------------------------------------------------------------------------- */
 
-void
-V3SVrfIPDR::startVerify(const uint32_t& p) {
-   startVerify2(p);
-   return;
-   // Initialize Parameters
+bool
+V3SVrfIPDR::BMC_BeforePDR(const uint32_t& p, uint32_t decompDepth){
    uint32_t proved = V3NtkUD, fired = V3NtkUD;
    struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
    clearResult(p); assert (!_constr.size());
    const string flushSpace = string(100, ' ');
    uint32_t fired2 = V3NtkUD;
    uint32_t boundDepth = 0;
-   if (profileON()) _totalStat->start(); 
-   // Start BMC Based Verification
    V3Ntk* simpNtk = 0; V3SvrBase* solver = 0;
-   while (boundDepth <= _decompDepth) {
+   while (boundDepth <= decompDepth) {
       // Check Time Bounds
       boundDepth += 1;
 
@@ -273,32 +270,45 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
             Msg(MSG_IFO) << *_totalStat << endl;
          }
       }
+      return true;
+   }
+   return false;
+}
+
+
+void
+V3SVrfIPDR::startVerify(const uint32_t& p) {
+
+   if(_mult){
+      startVerify2(p);
       return;
    }
+   // Initialize Parameters
+   uint32_t proved = V3NtkUD, fired = V3NtkUD;
+   struct timeval inittime, curtime; gettimeofday(&inittime, NULL);
+   clearResult(p); assert (!_constr.size());
+   const string flushSpace = string(100, ' ');
+   if (profileON()) _totalStat->start();
+
+   if(TEMDEC){
+      if (BMC_BeforePDR(p,_decompDepth)) return;
+   }
+
    setEndline(true);
    _maxTime = 900;
    // Clear Verification Results
 
-
-   bool verbose = false;
-
-   uint32_t simDepth = 30;
-   uint32_t nx = 100;
+   uint32_t simDepth = 100;
+   uint32_t nx = 1000000;
    V3AlgAigSimulate* _temSim = new V3AlgAigSimulate(_handler);
    vector<V3BitVecX> history;
    int first = -2;
-   // TODO turn off this
    if(TEMDEC){
-      //_temFrames.push_back(new V3SIPDRFrame());
-      // for (unsigned i = 0; i < simDepth; ++i){
-      //    _temFrames.push_back(new V3SIPDRFrame());
-      // }
       V3BitVecX value;
       value.resize(1);
       value.setX(0);
       assert(_vrfNtk->getInoutSize() == 0);
-      //for (uint32_t j = 0; j < simDepth; ++j) {
-      while(nx != 0 && first == -2 && history.size() < 100){
+      while(nx != 0 && first == -2 && history.size() < simDepth){
          V3BitVecX v_dff(_vrfNtk->getLatchSize());
          _temSim->updateNextStateValue();
          for (uint32_t i = 0; i < _vrfNtk->getInputSize(); ++i) {
@@ -315,12 +325,10 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
       }
    }
 
-   //_decompDepth = 3;
-
    V3BitVecX transient_signals(_vrfNtk->getLatchSize());
    nx = 0;
-   //if(first != -2){
-   if(false){
+   if(TEMDEC && SIMP_LATCH && first != -2){ // found loop
+   //if(false){
       for (uint32_t i = 0; i < _vrfNtk->getLatchSize(); ++i) {
          if(history[first][i] == '0'){
             bool aaa = true;
@@ -347,8 +355,9 @@ V3SVrfIPDR::startVerify(const uint32_t& p) {
    //cout << "\nNon-Xratio : " << nx << " " << _vrfNtk->getLatchSize() << endl;
    //cout << "MaxTransientDuration : " << first+2 << endl;
    //return;
+
    if(_tem_decomp == false) _decompDepth = 1;
-   //_decompDepth = first + 2;
+   if(SIMP_LATCH) _decompDepth = first + 2;   //align
    // set FFs to be constant
    cerr << "Original Circuit Latch Size : " << _vrfNtk->getLatchSize() << endl;
    //printNetlist(_vrfNtk);
@@ -623,26 +632,6 @@ V3SVrfIPDR::initializeSolver(const uint32_t& d, const bool& isReuse) {
       _pdrSvr[0]->addBoundedVerifyData(_pdrBad->getState()[0], 0);
       if (0 != getPDRDepth()) _pdrSvr[0]->assertProperty(_pdrBad->getState()[0], true, 0);
       assert (_pdrFrame.size() == _pdrSvr.size());
-
-      // pseudo TODO
-      /*for(uint32_t k = 0; k< _decompDepth; k++){// Set SATVar
-         _ntkData[out.id].push_back(newVar(width));
-         const Var& var = _ntkData[out.id].back();
-         // Build FF Initial State
-         const V3NetId in1 = _ntk->getInputNetId(out, 1); assert (validNetId(in1));
-         if (AIG_FALSE == _ntk->getGateType(in1)) {
-            //cerr << "AIG_FALSE" << endl;
-            _init.push_back(mkLit(var, !isV3NetInverted(in1)));
-         }
-         else if (out.id != in1.id) {  // Build Initial Circuit
-            //cerr << "not AIG_FALSE, " << in1.id << endl;
-            const Var var1 = getVerifyData(in1, 0); assert (var1);
-            const Var initVar = newVar(1);
-            xor_2(_Solver, mkLit(initVar, true), mkLit(var), mkLit(var1, isV3NetInverted(in1)));
-            _init.push_back(mkLit(initVar));
-         }
-      }*/
-
       _pdrSvr[0]->simplify();
    }
    else{

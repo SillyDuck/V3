@@ -157,6 +157,7 @@ class V3SVrfIPDR : public V3VrfBase
             }
       };
       void printState(const V3NetVec&) const;
+      bool BMC_BeforePDR(const uint32_t& , uint32_t);
       // Private Data Members
       V3SIPDRFrameVec    _pdrFrame;        // List of Frames (Ri) in Incremental PDR
       V3SIPDRCube*       _pdrBad;          // Cube for the Bad State (!p)
@@ -185,7 +186,8 @@ class V3SVrfIPDR : public V3VrfBase
       // Data Members for Temporal Decompostition
       V3SIPDRFrameVec   _temFrames;
       V3NtkTemDecomp*   _finalNtk;
-      bool             _tem_decomp;
+      bool              _tem_decomp;
+      bool              _mult;
 };
 
 // Inline Function Implementations of Cube Setting Functions
